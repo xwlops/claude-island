@@ -24,7 +24,7 @@
 
 ## Requirements
 
-- macOS 15.6+
+- macOS 14.0+
 - Claude Code CLI
 
 ## Install
@@ -34,6 +34,8 @@ Download the latest release or build from source:
 ```bash
 xcodebuild -scheme ClaudeIsland -configuration Release build
 ```
+
+Tagged pushes such as `v1.2.0` also build a DMG in GitHub Actions and upload it to GitHub Releases.
 
 ## How It Works
 

@@ -1,0 +1,88 @@
+name: Build Claude Island
+
+on:
+  push:
+    branches: [main, master]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    env:
+      DIST_DIR: ${{ github.workspace }}/dist
+      ARCHIVE_PATH: ${{ runner.temp }}/ClaudeIsland.xcarchive
+      EXPORT_DIR: ${{ runner.temp }}/export
+      APP_NAME: Claude Island.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ClaudeIsland.xcodeproj \
+            -scheme ClaudeIsland
+
+      - name: Build archive
+        run: |
+          xcodebuild archive \
+            -project ClaudeIsland.xcodeproj \
+            -scheme ClaudeIsland \
+            -configuration Release \
+            -archivePath "$ARCHIVE_PATH" \
+            -destination "generic/platform=macOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        run: |
+          APP_PATH="$ARCHIVE_PATH/Products/Applications/$APP_NAME"
+          STAGING_DIR="$EXPORT_DIR/dmg"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            RELEASE_ID="$GITHUB_REF_NAME"
+          else
+            RELEASE_ID="$GITHUB_SHA"
+          fi
+          DMG_PATH="$DIST_DIR/ClaudeIsland-$RELEASE_ID.dmg"
+
+          test -d "$APP_PATH"
+          mkdir -p "$DIST_DIR" "$STAGING_DIR"
+          cp -R "$APP_PATH" "$STAGING_DIR/"
+
+          create-dmg \
+            --overwrite \
+            --volname "Claude Island" \
+            --window-size 640 400 \
+            --icon-size 100 \
+            --icon "$APP_NAME" 180 170 \
+            --app-drop-link 460 170 \
+            --hide-extension "$APP_NAME" \
+            "$DMG_PATH" \
+            "$STAGING_DIR"
+
+          ls -la "$DIST_DIR"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClaudeIsland-DMG
+          path: dist/*.dmg
+
+      - name: Publish DMG to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg
+          generate_release_notes: true
