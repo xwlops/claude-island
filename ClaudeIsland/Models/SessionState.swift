@@ -14,6 +14,7 @@ struct SessionState: Equatable, Identifiable, Sendable {
     // MARK: - Identity
 
     let sessionId: String
+    let provider: SessionProvider
     let cwd: String
     let projectName: String
 
@@ -66,6 +67,7 @@ struct SessionState: Equatable, Identifiable, Sendable {
 
     nonisolated init(
         sessionId: String,
+        provider: SessionProvider = .claude,
         cwd: String,
         projectName: String? = nil,
         pid: Int? = nil,
@@ -84,6 +86,7 @@ struct SessionState: Equatable, Identifiable, Sendable {
         createdAt: Date = Date()
     ) {
         self.sessionId = sessionId
+        self.provider = provider
         self.cwd = cwd
         self.projectName = projectName ?? URL(fileURLWithPath: cwd).lastPathComponent
         self.pid = pid
@@ -182,6 +185,10 @@ struct SessionState: Equatable, Identifiable, Sendable {
     /// Whether the session can be interacted with
     var canInteract: Bool {
         phase.needsAttention
+    }
+
+    var supportsInlineMessaging: Bool {
+        provider.supportsInlineMessaging
     }
 }
 

@@ -2,7 +2,7 @@
   <img src="ClaudeIsland/Assets.xcassets/AppIcon.appiconset/icon_128x128.png" alt="Logo" width="100" height="100">
   <h3 align="center">Claude Island</h3>
   <p align="center">
-    A macOS menu bar app that brings Dynamic Island-style notifications to Claude Code CLI sessions.
+    A macOS menu bar app that brings Dynamic Island-style notifications to Claude Code and OpenCode sessions.
     <br />
     <br />
     <a href="https://github.com/farouqaldori/claude-island/releases/latest" target="_blank" rel="noopener noreferrer">
@@ -17,7 +17,7 @@
 ## Features
 
 - **Notch UI** — Animated overlay that expands from the MacBook notch
-- **Live Session Monitoring** — Track multiple Claude Code sessions in real-time
+- **Live Session Monitoring** — Track multiple Claude Code and OpenCode sessions in real-time
 - **Permission Approvals** — Approve or deny tool executions directly from the notch
 - **Chat History** — View full conversation history with markdown rendering
 - **Auto-Setup** — Hooks install automatically on first launch
@@ -25,7 +25,7 @@
 ## Requirements
 
 - macOS 14.0+
-- Claude Code CLI
+- Claude Code CLI or OpenCode
 
 ## Install
 
@@ -39,7 +39,7 @@ Tagged pushes such as `v1.2.0` also build a DMG in GitHub Actions and upload it 
 
 ## How It Works
 
-Claude Island installs hooks into `~/.claude/hooks/` that communicate session state via a Unix socket. The app listens for events and displays them in the notch overlay.
+Claude Island installs hooks into `~/.claude/hooks/` for Claude Code, and also reads local OpenCode session state, then displays both in the notch overlay.
 
 When Claude needs permission to run a tool, the notch expands with approve/deny buttons—no need to switch to the terminal.
 

@@ -16,6 +16,7 @@ class ClaudeSessionMonitor: ObservableObject {
     @Published var pendingInstances: [SessionState] = []
 
     private var cancellables = Set<AnyCancellable>()
+    private var openCodePollingTask: Task<Void, Never>?
 
     init() {
         SessionStore.shared.sessionsPublisher
@@ -68,10 +69,14 @@ class ClaudeSessionMonitor: ObservableObject {
                 }
             }
         )
+
+        startOpenCodeMonitoring()
     }
 
     func stopMonitoring() {
         HookSocketServer.shared.stop()
+        openCodePollingTask?.cancel()
+        openCodePollingTask = nil
     }
 
     // MARK: - Permission Handling
@@ -133,6 +138,21 @@ class ClaudeSessionMonitor: ObservableObject {
     func loadHistory(sessionId: String, cwd: String) {
         Task {
             await SessionStore.shared.process(.loadHistory(sessionId: sessionId, cwd: cwd))
+        }
+    }
+
+    private func startOpenCodeMonitoring() {
+        guard openCodePollingTask == nil else { return }
+
+        openCodePollingTask = Task {
+            while !Task.isCancelled {
+                let sessions = await OpenCodeMonitor.shared.fetchSessions()
+                await SessionStore.shared.process(
+                    .providerSessionsUpdated(provider: .opencode, sessions: sessions)
+                )
+
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
         }
     }
 }

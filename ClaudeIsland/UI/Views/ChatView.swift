@@ -352,12 +352,12 @@ struct ChatView: View {
 
     /// Can send messages only if session is in tmux
     private var canSendMessages: Bool {
-        session.isInTmux && session.tty != nil
+        session.supportsInlineMessaging && session.isInTmux && session.tty != nil
     }
 
     private var inputBar: some View {
         HStack(spacing: 10) {
-            TextField(canSendMessages ? "Message Claude..." : "Open Claude Code in tmux to enable messaging", text: $inputText)
+            TextField(inputPlaceholder, text: $inputText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
                 .foregroundColor(canSendMessages ? .white : .white.opacity(0.4))
@@ -401,6 +401,16 @@ struct ChatView: View {
             .allowsHitTesting(false)
         }
         .zIndex(1) // Render above message list
+    }
+
+    private var inputPlaceholder: String {
+        if canSendMessages {
+            return "Message Claude..."
+        }
+        if session.provider == .opencode {
+            return "OpenCode sessions are currently read-only"
+        }
+        return "Open Claude Code in tmux to enable messaging"
     }
 
     // MARK: - Approval Bar

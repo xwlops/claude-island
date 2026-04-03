@@ -64,7 +64,7 @@ struct NotchMenuView: View {
 
             MenuToggleRow(
                 icon: "arrow.triangle.2.circlepath",
-                label: "Hooks",
+                label: "Claude Hooks",
                 isOn: hooksInstalled
             ) {
                 if hooksInstalled {

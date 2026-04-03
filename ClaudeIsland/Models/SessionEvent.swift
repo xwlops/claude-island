@@ -75,6 +75,9 @@ enum SessionEvent: Sendable {
 
     /// History load completed
     case historyLoaded(sessionId: String, messages: [ChatMessage], completedTools: Set<String>, toolResults: [String: ConversationParser.ToolResult], structuredResults: [String: ToolResultData], conversationInfo: ConversationInfo)
+
+    /// Replace all sessions for a provider with the latest snapshot
+    case providerSessionsUpdated(provider: SessionProvider, sessions: [SessionState])
 }
 
 /// Payload for file update events
@@ -203,6 +206,8 @@ extension SessionEvent: CustomStringConvertible {
             return "loadHistory(session: \(sessionId.prefix(8)))"
         case .historyLoaded(let sessionId, let messages, _, _, _, _):
             return "historyLoaded(session: \(sessionId.prefix(8)), messages: \(messages.count))"
+        case .providerSessionsUpdated(let provider, let sessions):
+            return "providerSessionsUpdated(\(provider.rawValue), count: \(sessions.count))"
         case .toolCompleted(let sessionId, let toolUseId, let result):
             return "toolCompleted(session: \(sessionId.prefix(8)), tool: \(toolUseId.prefix(12)), status: \(result.status))"
         case .subagentStarted(let sessionId, let taskToolId):

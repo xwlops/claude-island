@@ -88,6 +88,9 @@ actor SessionStore {
                 conversationInfo: conversationInfo
             )
 
+        case .providerSessionsUpdated(let provider, let sessions):
+            processProviderSessionsUpdated(provider: provider, sessions: sessions)
+
         case .toolCompleted(let sessionId, let toolUseId, let result):
             await processToolCompleted(sessionId: sessionId, toolUseId: toolUseId, result: result)
 
@@ -172,6 +175,7 @@ actor SessionStore {
     private func createSession(from event: HookEvent) -> SessionState {
         SessionState(
             sessionId: event.sessionId,
+            provider: .claude,
             cwd: event.cwd,
             projectName: URL(fileURLWithPath: event.cwd).lastPathComponent,
             pid: event.pid,
@@ -179,6 +183,22 @@ actor SessionStore {
             isInTmux: false,  // Will be updated
             phase: .idle
         )
+    }
+
+    private func processProviderSessionsUpdated(provider: SessionProvider, sessions newSessions: [SessionState]) {
+        let incomingIds = Set(newSessions.map(\.sessionId))
+        let staleIds = sessions
+            .filter { $0.value.provider == provider && !incomingIds.contains($0.key) }
+            .map(\.key)
+
+        for sessionId in staleIds {
+            sessions.removeValue(forKey: sessionId)
+            cancelPendingSync(sessionId: sessionId)
+        }
+
+        for session in newSessions {
+            sessions[session.sessionId] = session
+        }
     }
 
     private func processToolTracking(event: HookEvent, session: inout SessionState) {
