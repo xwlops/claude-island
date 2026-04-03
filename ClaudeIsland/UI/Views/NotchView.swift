@@ -555,7 +555,8 @@ struct NotchView: View {
             switch viewModel.contentType {
             case .instances:
                 ClaudeInstancesView(
-                    sessionMonitor: sessionMonitor
+                    sessionMonitor: sessionMonitor,
+                    viewModel: viewModel
                 )
             case .menu:
                 NotchMenuView(viewModel: viewModel)

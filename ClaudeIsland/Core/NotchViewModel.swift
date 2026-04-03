@@ -258,9 +258,9 @@ class NotchViewModel: ObservableObject {
         contentType = contentType == .menu ? .instances : .menu
     }
 
-    func showChat(for _: SessionState) {
-        currentChatSession = nil
-        contentType = .instances
+    func showChat(for session: SessionState) {
+        currentChatSession = session
+        contentType = .chat(session)
     }
 
     /// Go back to instances list and clear saved chat state

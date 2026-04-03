@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ClaudeInstancesView: View {
     @ObservedObject var sessionMonitor: ClaudeSessionMonitor
+    @ObservedObject var viewModel: NotchViewModel
     @AppStorage("showUsageSummary") private var showUsageSummary: Bool = true
 
     var body: some View {
@@ -78,7 +79,8 @@ struct ClaudeInstancesView: View {
                         onFocus: { focusSession(session) },
                         onArchive: { archiveSession(session) },
                         onApprove: { approveSession(session) },
-                        onReject: { rejectSession(session) }
+                        onReject: { rejectSession(session) },
+                        onOpenChat: { openChat(session) }
                     )
                     .id(session.stableId)
                 }
@@ -123,6 +125,10 @@ struct ClaudeInstancesView: View {
     private func archiveSession(_ session: SessionState) {
         sessionMonitor.archiveSession(sessionId: session.sessionId)
     }
+
+    private func openChat(_ session: SessionState) {
+        viewModel.showChat(for: session)
+    }
 }
 
 private struct UsagePill: View {
@@ -157,6 +163,7 @@ struct InstanceRow: View {
     let onArchive: () -> Void
     let onApprove: () -> Void
     let onReject: () -> Void
+    let onOpenChat: () -> Void
 
     @State private var isHovered = false
     @State private var isYabaiAvailable = false
@@ -301,9 +308,7 @@ struct InstanceRow: View {
         .padding(.vertical, 12)
         .contentShape(Rectangle())
         .onTapGesture {
-            if session.isInTmux && isYabaiAvailable {
-                onFocus()
-            }
+            onOpenChat()
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isWaitingForApproval)
         .background(
