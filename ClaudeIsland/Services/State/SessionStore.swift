@@ -228,7 +228,7 @@ actor SessionStore {
             sessions[session.sessionId] = session
         }
 
-        Self.logger.info("Provider sessions updated: \(provider.rawValue) count=\(newSessions.count), total sessions=\(sessions.count)")
+        Self.logger.info("Provider sessions updated: \(provider.rawValue) count=\(newSessions.count), total sessions=\(self.sessions.count)")
     }
 
     private func processToolTracking(event: HookEvent, session: inout SessionState) {
