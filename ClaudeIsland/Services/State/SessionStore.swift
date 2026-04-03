@@ -196,7 +196,27 @@ actor SessionStore {
             cancelPendingSync(sessionId: sessionId)
         }
 
-        for session in newSessions {
+        for var session in newSessions {
+            // Ensure provider is correctly set (fix for sessions created before provider fix)
+            if session.provider != provider {
+                session = SessionState(
+                    sessionId: session.sessionId,
+                    provider: provider,
+                    cwd: session.cwd,
+                    projectName: session.projectName,
+                    pid: session.pid,
+                    tty: session.tty,
+                    isInTmux: session.isInTmux,
+                    phase: session.phase,
+                    chatItems: session.chatItems,
+                    toolTracker: session.toolTracker,
+                    subagentState: session.subagentState,
+                    conversationInfo: session.conversationInfo,
+                    needsClearReconciliation: session.needsClearReconciliation,
+                    lastActivity: session.lastActivity,
+                    createdAt: session.createdAt
+                )
+            }
             sessions[session.sessionId] = session
         }
     }
