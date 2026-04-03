@@ -32,11 +32,18 @@ struct ChatView: View {
         self._session = State(initialValue: initialSession)
 
         // Initialize from cache if available (prevents loading flicker on view recreation)
-        let cachedHistory = ChatHistoryManager.shared.history(for: sessionId)
-        let alreadyLoaded = !cachedHistory.isEmpty
-        self._history = State(initialValue: cachedHistory)
-        self._isLoading = State(initialValue: !alreadyLoaded)
-        self._hasLoadedOnce = State(initialValue: alreadyLoaded)
+        // For OpenCode sessions, use chatItems from initialSession directly
+        if initialSession.provider == .opencode && !initialSession.chatItems.isEmpty {
+            self._history = State(initialValue: initialSession.chatItems)
+            self._isLoading = State(initialValue: false)
+            self._hasLoadedOnce = State(initialValue: true)
+        } else {
+            let cachedHistory = ChatHistoryManager.shared.history(for: sessionId)
+            let alreadyLoaded = !cachedHistory.isEmpty
+            self._history = State(initialValue: cachedHistory)
+            self._isLoading = State(initialValue: !alreadyLoaded)
+            self._hasLoadedOnce = State(initialValue: alreadyLoaded)
+        }
     }
 
     /// Whether we're waiting for approval
@@ -93,6 +100,13 @@ struct ChatView: View {
             // Skip if already loaded (prevents redundant work on view recreation)
             guard !hasLoadedOnce else { return }
             hasLoadedOnce = true
+
+            // For OpenCode sessions, chatItems are already loaded from the database
+            if session.provider == .opencode && !session.chatItems.isEmpty {
+                history = session.chatItems
+                isLoading = false
+                return
+            }
 
             // Check if already loaded (from previous visit)
             if ChatHistoryManager.shared.isLoaded(sessionId: sessionId) {

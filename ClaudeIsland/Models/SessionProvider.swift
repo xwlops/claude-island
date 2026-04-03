@@ -18,6 +18,7 @@ enum SessionProvider: String, Equatable, Sendable {
     }
 
     var supportsInlineMessaging: Bool {
-        self == .claude
+        // Both Claude Code and OpenCode support inline messaging
+        true
     }
 }
