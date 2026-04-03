@@ -72,7 +72,7 @@ actor OpenCodeMonitor {
         let createdAt = date(fromMilliseconds: row.timeCreated)
         let updatedAt = date(fromMilliseconds: row.timeUpdated)
 
-        var chatItems: [ChatHistoryItem] = []
+        var allChatItems: [ChatHistoryItem] = []
         var firstUserMessage: String?
         var lastUserMessageDate: Date?
         var lastMessage: String?
@@ -83,7 +83,7 @@ actor OpenCodeMonitor {
             guard !items.isEmpty else { continue }
 
             for item in items {
-                chatItems.append(item)
+                allChatItems.append(item)
 
                 switch item.type {
                 case .user(let text):
@@ -109,7 +109,7 @@ actor OpenCodeMonitor {
 
         // Determine lastToolName from the last toolCall item
         var lastToolName: String?
-        for item in chatItems.reversed() {
+        for item in allChatItems.reversed() {
             if case .toolCall(let tool) = item.type {
                 lastToolName = tool.name
                 break
@@ -135,7 +135,7 @@ actor OpenCodeMonitor {
             tty: nil,
             isInTmux: false,
             phase: determinePhase(from: messages.last),
-            chatItems: chatItems,
+            chatItems: allChatItems,
             conversationInfo: conversationInfo,
             lastActivity: updatedAt,
             createdAt: createdAt
@@ -194,7 +194,8 @@ actor OpenCodeMonitor {
                 }
             }
             if items.isEmpty,
-               let errorMessage = message.payload.error?.data.message?.trimmedForDisplay {
+               let error = message.payload.error,
+               let errorMessage = error.data.message.trimmedForDisplay {
                 items.append(ChatHistoryItem(id: message.id, type: .assistant(errorMessage), timestamp: timestamp))
             }
         case "system":
