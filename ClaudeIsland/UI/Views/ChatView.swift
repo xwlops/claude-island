@@ -163,6 +163,23 @@ struct ChatView: View {
                 session = updated
                 let isNowProcessing = updated.phase == .processing
 
+                if updated.provider == .opencode, updated.chatItems != history {
+                    let countChanged = updated.chatItems.count != history.count
+
+                    if isAutoscrollPaused && updated.chatItems.count > previousHistoryCount {
+                        let addedCount = updated.chatItems.count - previousHistoryCount
+                        newMessageCount += addedCount
+                    }
+
+                    previousHistoryCount = updated.chatItems.count
+                    history = updated.chatItems
+                    isLoading = false
+
+                    if !isAutoscrollPaused && countChanged {
+                        shouldScrollToBottom = true
+                    }
+                }
+
                 if wasWaiting && isNowProcessing {
                     // Scroll to bottom after permission accepted (with slight delay)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {

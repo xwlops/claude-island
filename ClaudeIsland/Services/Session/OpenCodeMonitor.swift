@@ -37,10 +37,9 @@ actor OpenCodeMonitor {
         """
         let partSql = """
         select
+            id,
             message_id,
-            json_extract(data, '$.type') as type,
-            json_extract(data, '$.text') as text,
-            json_extract(data, '$.filename') as filename
+            data
         from part
         where session_id = '\(escaped(sessionId))'
         order by time_created asc;
@@ -53,9 +52,8 @@ actor OpenCodeMonitor {
         let decoder = JSONDecoder()
 
         for row in partRows {
-            partsByMessageId[row.messageId, default: []].append(
-                OpenCodePartPayload(type: row.type, text: row.text, filename: row.filename)
-            )
+            guard let payload = parsePartPayload(from: row) else { continue }
+            partsByMessageId[row.messageId, default: []].append(payload)
         }
 
         return messageRows.compactMap { row in
@@ -81,30 +79,31 @@ actor OpenCodeMonitor {
         var lastMessageRole: String?
 
         for message in messages {
-            guard let item = chatItem(from: message) else { continue }
-            chatItems.append(item)
+            let items = chatItems(from: message)
+            guard !items.isEmpty else { continue }
 
-            switch item.type {
-            case .user(let text):
-                if firstUserMessage == nil && !text.isEmpty {
-                    firstUserMessage = text
+            for item in items {
+                chatItems.append(item)
+
+                switch item.type {
+                case .user(let text):
+                    if firstUserMessage == nil && !text.isEmpty {
+                        firstUserMessage = text
+                    }
+                    lastUserMessageDate = item.timestamp
+                    lastMessage = text
+                    lastMessageRole = "user"
+                case .assistant(let text):
+                    lastMessage = text
+                    lastMessageRole = "assistant"
+                case .thinking(let text):
+                    lastMessage = text
+                    lastMessageRole = "assistant"
+                case .toolCall:
+                    lastMessageRole = "tool"
+                case .interrupted:
+                    break
                 }
-                lastUserMessageDate = item.timestamp
-                lastMessage = text
-                lastMessageRole = "user"
-            case .assistant(let text):
-                lastMessage = text
-                lastMessageRole = "assistant"
-            case .thinking(let text):
-                lastMessage = text
-                lastMessageRole = "assistant"
-            case .toolCall(let tool):
-                // For tool calls, update lastMessageRole to "tool" and lastToolName
-                lastMessageRole = "tool"
-                // Store tool name in a temporary variable for ConversationInfo
-                // The tool name is already in the tool object
-            case .interrupted:
-                break
             }
         }
 
@@ -143,64 +142,70 @@ actor OpenCodeMonitor {
         )
     }
 
-    private func chatItem(from message: OpenCodeMessage) -> ChatHistoryItem? {
+    private func chatItems(from message: OpenCodeMessage) -> [ChatHistoryItem] {
         let timestamp = date(fromMilliseconds: message.payload.time.created ?? message.timeCreated)
-        let content = message.parts.compactMap { part -> String? in
-            switch part.type {
-            case "text":
-                return part.text
-            case "file":
-                if let filename = part.filename, !filename.isEmpty {
-                    return "[Attached file: \(filename)]"
-                }
-                return "[Attached file]"
-            default:
-                return nil
-            }
-        }
-        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        .joined(separator: "\n")
-
-        // Check for tool calls in parts
-        let toolCalls = message.parts.filter { $0.type == "tool" }
+        var items: [ChatHistoryItem] = []
 
         switch message.payload.role {
         case "user":
-            guard !content.isEmpty else { return nil }
-            return ChatHistoryItem(id: message.id, type: .user(content), timestamp: timestamp)
+            let content = message.parts.compactMap(\.displayText).joined(separator: "\n")
+            guard !content.isEmpty else { return [] }
+            items.append(ChatHistoryItem(id: message.id, type: .user(content), timestamp: timestamp))
         case "assistant":
-            // If there are tool calls, create toolCall items for them
-            // Otherwise show assistant text
-            if !toolCalls.isEmpty {
-                // Return the first tool call as a toolCall item
-                // In a real implementation, we might want to return multiple items
-                let firstTool = toolCalls.first
-                return ChatHistoryItem(
-                    id: message.id,
-                    type: .toolCall(ToolCallItem(
-                        name: firstTool?.type ?? "unknown",
-                        input: [:],
-                        status: .success,
-                        result: nil,
-                        structuredResult: nil,
-                        subagentTools: []
-                    )),
-                    timestamp: timestamp
-                )
+            for (index, part) in message.parts.enumerated() {
+                switch part.type {
+                case "reasoning":
+                    if let text = part.text?.trimmedForDisplay {
+                        items.append(ChatHistoryItem(
+                            id: "\(message.id)-reasoning-\(index)",
+                            type: .thinking(text),
+                            timestamp: timestamp
+                        ))
+                    }
+                case "tool":
+                    items.append(ChatHistoryItem(
+                        id: part.callID ?? "\(message.id)-tool-\(index)",
+                        type: .toolCall(ToolCallItem(
+                            name: part.toolName ?? "unknown",
+                            input: part.toolInput,
+                            status: part.toolStatus,
+                            result: part.toolOutput,
+                            structuredResult: nil,
+                            subagentTools: []
+                        )),
+                        timestamp: timestamp
+                    ))
+                case "patch":
+                    if let text = part.patchSummary {
+                        items.append(ChatHistoryItem(
+                            id: "\(message.id)-patch-\(index)",
+                            type: .assistant(text),
+                            timestamp: timestamp
+                        ))
+                    }
+                default:
+                    if let text = part.displayText {
+                        items.append(ChatHistoryItem(
+                            id: "\(message.id)-\(part.type)-\(index)",
+                            type: .assistant(text),
+                            timestamp: timestamp
+                        ))
+                    }
+                }
             }
-            if !content.isEmpty {
-                return ChatHistoryItem(id: message.id, type: .assistant(content), timestamp: timestamp)
+            if items.isEmpty,
+               let errorMessage = message.payload.error?.data.message?.trimmedForDisplay {
+                items.append(ChatHistoryItem(id: message.id, type: .assistant(errorMessage), timestamp: timestamp))
             }
-            if let errorMessage = message.payload.error?.data.message, !errorMessage.isEmpty {
-                return ChatHistoryItem(id: message.id, type: .assistant(errorMessage), timestamp: timestamp)
-            }
-            return nil
         case "system":
-            guard !content.isEmpty else { return nil }
-            return ChatHistoryItem(id: message.id, type: .thinking(content), timestamp: timestamp)
+            let content = message.parts.compactMap(\.displayText).joined(separator: "\n")
+            guard !content.isEmpty else { return [] }
+            items.append(ChatHistoryItem(id: message.id, type: .thinking(content), timestamp: timestamp))
         default:
-            return nil
+            return []
         }
+
+        return items
     }
 
     private func determinePhase(from message: OpenCodeMessage?) -> SessionPhase {
@@ -223,6 +228,65 @@ actor OpenCodeMonitor {
 
     private func escaped(_ string: String) -> String {
         string.replacingOccurrences(of: "'", with: "''")
+    }
+
+    private func parsePartPayload(from row: OpenCodePartRow) -> OpenCodePartPayload? {
+        guard let data = row.data.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let type = json["type"] as? String else {
+            return nil
+        }
+
+        let text = json["text"] as? String
+        let filename = json["filename"] as? String
+        let callID = json["callID"] as? String
+        let toolName = json["tool"] as? String
+        let state = json["state"] as? [String: Any]
+        let statusString = state?["status"] as? String
+        let input = (state?["input"] as? [String: Any]) ?? [:]
+        let output = state?["output"] as? String
+        let files = json["files"] as? [String] ?? []
+
+        return OpenCodePartPayload(
+            id: row.id,
+            type: type,
+            text: text,
+            filename: filename,
+            callID: callID,
+            toolName: toolName,
+            toolStatus: ToolStatus.from(openCodeStatus: statusString),
+            toolInput: normalizeToolInput(input),
+            toolOutput: output?.trimmedForDisplay,
+            patchFiles: files
+        )
+    }
+
+    private func normalizeToolInput(_ input: [String: Any]) -> [String: String] {
+        var normalized: [String: String] = [:]
+
+        for (key, value) in input {
+            switch value {
+            case let string as String:
+                normalized[key] = string
+            case let number as NSNumber:
+                normalized[key] = number.stringValue
+            case let bool as Bool:
+                normalized[key] = bool ? "true" : "false"
+            case let array as [String]:
+                normalized[key] = array.joined(separator: ", ")
+            default:
+                continue
+            }
+        }
+
+        if let filePath = normalized["filePath"], normalized["file_path"] == nil {
+            normalized["file_path"] = filePath
+        }
+        if let description = normalized["description"], normalized["title"] == nil {
+            normalized["title"] = description
+        }
+
+        return normalized
     }
 
     private func query<T: Decodable>(_ sql: String) async -> T? {
@@ -270,16 +334,14 @@ private struct OpenCodeMessageRow: Decodable {
 }
 
 private struct OpenCodePartRow: Decodable {
+    let id: String
     let messageId: String
-    let type: String
-    let text: String?
-    let filename: String?
+    let data: String
 
     enum CodingKeys: String, CodingKey {
+        case id
         case messageId = "message_id"
-        case type
-        case text
-        case filename
+        case data
     }
 }
 
@@ -310,7 +372,57 @@ private struct OpenCodeErrorData: Decodable, Sendable {
 }
 
 private struct OpenCodePartPayload: Sendable {
+    let id: String
     let type: String
     let text: String?
     let filename: String?
+    let callID: String?
+    let toolName: String?
+    let toolStatus: ToolStatus
+    let toolInput: [String: String]
+    let toolOutput: String?
+    let patchFiles: [String]
+
+    var displayText: String? {
+        switch type {
+        case "text", "reasoning":
+            return text?.trimmedForDisplay
+        case "file":
+            if let filename, !filename.isEmpty {
+                return "[Attached file: \(filename)]"
+            }
+            return "[Attached file]"
+        default:
+            return nil
+        }
+    }
+
+    var patchSummary: String? {
+        guard type == "patch", !patchFiles.isEmpty else { return nil }
+        let fileNames = patchFiles.map { URL(fileURLWithPath: $0).lastPathComponent }.prefix(3)
+        let suffix = patchFiles.count > 3 ? " +" + String(patchFiles.count - 3) : ""
+        return "Updated \(fileNames.joined(separator: ", "))\(suffix)"
+    }
+}
+
+private extension String {
+    var trimmedForDisplay: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+private extension ToolStatus {
+    static func from(openCodeStatus status: String?) -> ToolStatus {
+        switch status {
+        case "completed":
+            return .success
+        case "error", "failed":
+            return .error
+        case "pending", "running", "in_progress":
+            return .running
+        default:
+            return .running
+        }
+    }
 }
