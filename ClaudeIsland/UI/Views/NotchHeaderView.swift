@@ -40,24 +40,31 @@ struct NotchDragonIcon: View {
 
     var body: some View {
         Canvas { context, canvasSize in
-            let scale = size / 16.0
-            let width: CGFloat = 18
+            let sprite = currentSprite
+            let scale = size / 20.0
+            let width = CGFloat(sprite.first?.count ?? 18)
             let xOffset = (canvasSize.width - width * scale) / 2
-            let legShift: CGFloat = animate && pose == .running && framePhase.isMultiple(of: 2) ? 1 : 0
-            let tailShift: CGFloat = animate && pose == .running && framePhase.isMultiple(of: 2) ? -1 : 0
+            let pixels = filledPixels(in: sprite)
+            let eyePixels = markerPixels(in: sprite, marker: "o")
+            let crashedEyePixels = markerPixels(in: sprite, marker: "x")
 
-            drawPixels(dinoShadowPixels(legShift: legShift, tailShift: tailShift),
+            drawPixels(
+                pixels.map { ($0.0 + 0.7, $0.1 + 0.7) },
                        color: Color.black.opacity(0.35),
                        context: &context,
                        scale: scale,
                        xOffset: xOffset,
-                        yOffset: 1)
-            drawPixels(dinoPixels(legShift: legShift, tailShift: tailShift),
+                yOffset: 0
+            )
+            drawPixels(
+                pixels,
                        color: color,
                        context: &context,
                        scale: scale,
-                       xOffset: xOffset)
-            drawPixels(dinoEyePixels, color: eyeColor, context: &context, scale: scale, xOffset: xOffset)
+                       xOffset: xOffset
+            )
+            drawPixels(eyePixels, color: Color.white.opacity(0.95), context: &context, scale: scale, xOffset: xOffset)
+            drawPixels(crashedEyePixels, color: Color.white.opacity(0.95), context: &context, scale: scale, xOffset: xOffset)
         }
         .frame(width: size * 1.12, height: size)
         .onReceive(animationTimer) { _ in
@@ -149,42 +156,225 @@ struct NotchDragonIcon: View {
             + [(12, 10), (13, 10), (14, 10)]
     }
 
-    private func dinoPixels(legShift: CGFloat, tailShift: CGFloat) -> [(CGFloat, CGFloat)] {
+    private var currentSprite: [String] {
         switch pose {
         case .waiting:
-            return waitingPixels
+            return framePhase.isMultiple(of: 3) ? waitingOpenSprite : waitingBlinkSprite
         case .running:
-            return runningPixels(legShift: legShift, tailShift: tailShift)
+            return framePhase.isMultiple(of: 2) ? runningSpriteA : runningSpriteB
         case .jumping:
-            return jumpingPixels
+            return jumpingSprite
         case .ducking:
-            return duckingPixels
+            return framePhase.isMultiple(of: 2) ? duckingSpriteA : duckingSpriteB
         case .crashed:
-            return crashedPixels
+            return crashedSprite
         }
     }
 
-    private func dinoShadowPixels(legShift: CGFloat, tailShift: CGFloat) -> [(CGFloat, CGFloat)] {
-        dinoPixels(legShift: legShift, tailShift: tailShift).map { ($0.0 + 0.65, $0.1 + 0.65) }
-    }
-
-    private var dinoEyePixels: [(CGFloat, CGFloat)] {
-        switch pose {
-        case .waiting:
-            return framePhase.isMultiple(of: 3) ? [(11, 3)] : [(11, 3), (11, 4)]
-        case .running, .jumping:
-            return [(11, 3)]
-        case .ducking:
-            return [(12, 8)]
-        case .crashed:
-            return [(11, 4), (12, 3)]
+    private func filledPixels(in sprite: [String]) -> [(CGFloat, CGFloat)] {
+        var pixels: [(CGFloat, CGFloat)] = []
+        for (y, row) in sprite.enumerated() {
+            for (x, char) in row.enumerated() where char == "#" {
+                pixels.append((CGFloat(x), CGFloat(y)))
+            }
         }
+        return pixels
     }
 
-    private var eyeColor: Color {
-        pose == .crashed ? color.opacity(0.9) : Color.white.opacity(0.95)
+    private func markerPixels(in sprite: [String], marker: Character) -> [(CGFloat, CGFloat)] {
+        var pixels: [(CGFloat, CGFloat)] = []
+        for (y, row) in sprite.enumerated() {
+            for (x, char) in row.enumerated() where char == marker {
+                pixels.append((CGFloat(x), CGFloat(y)))
+            }
+        }
+        return pixels
     }
 }
+
+private let waitingOpenSprite = [
+    "..................",
+    "..........####....",
+    ".........######...",
+    ".........##o####..",
+    ".........#######..",
+    ".........#######..",
+    "........########..",
+    ".......########...",
+    ".....##########...",
+    "...############...",
+    "..############....",
+    "..##########......",
+    "...########.......",
+    "....#######.......",
+    ".....######.......",
+    "......#####.......",
+    ".....##.###.......",
+    "....##..##........",
+    "....##..##........",
+    ".................."
+]
+
+private let waitingBlinkSprite = [
+    "..................",
+    "..........####....",
+    ".........######...",
+    ".........##.####..",
+    ".........#######..",
+    ".........#######..",
+    "........########..",
+    ".......########...",
+    ".....##########...",
+    "...############...",
+    "..############....",
+    "..##########......",
+    "...########.......",
+    "....#######.......",
+    ".....######.......",
+    "......#####.......",
+    ".....##.###.......",
+    "....##..##........",
+    "....##..##........",
+    ".................."
+]
+
+private let runningSpriteA = [
+    "..................",
+    "..........####....",
+    ".........######...",
+    ".........##o####..",
+    ".........#######..",
+    ".........#######..",
+    "........########..",
+    ".......########...",
+    ".....##########...",
+    "...############...",
+    "..############....",
+    "..##########......",
+    "...########.......",
+    "....#######.......",
+    ".....######.......",
+    "......#####.......",
+    ".....##.###.......",
+    "....##...##.......",
+    "....##....##......",
+    ".................."
+]
+
+private let runningSpriteB = [
+    "..................",
+    "..........####....",
+    ".........######...",
+    ".........##o####..",
+    ".........#######..",
+    ".........#######..",
+    "........########..",
+    ".......########...",
+    ".....##########...",
+    "...############...",
+    "..############....",
+    "..##########......",
+    "...########.......",
+    "....#######.......",
+    ".....######.......",
+    "......#####.......",
+    ".....###.##.......",
+    ".....##..###......",
+    "....##....##......",
+    ".................."
+]
+
+private let jumpingSprite = [
+    "..................",
+    ".........####.....",
+    "........######....",
+    "........##o####...",
+    "........#######...",
+    "........#######...",
+    ".......########...",
+    "......########....",
+    "....##########....",
+    "..############....",
+    ".############.....",
+    ".##########.......",
+    "..########........",
+    "...#######........",
+    "....######........",
+    ".....#####........",
+    ".....##.##........",
+    "......#..##.......",
+    ".........##.......",
+    ".................."
+]
+
+private let duckingSpriteA = [
+    "..................",
+    "..................",
+    "..................",
+    "............##....",
+    ".........#######..",
+    ".......##########.",
+    ".....###########..",
+    "...############...",
+    "..############....",
+    ".############.....",
+    ".##########.......",
+    "..########........",
+    "...######.........",
+    "....#####.........",
+    ".....#######......",
+    "....###..####.....",
+    "...###....###.....",
+    "...##.....##......",
+    "..................",
+    ".................."
+]
+
+private let duckingSpriteB = [
+    "..................",
+    "..................",
+    "..................",
+    "............##....",
+    ".........#######..",
+    ".......##########.",
+    ".....###########..",
+    "...############...",
+    "..############....",
+    ".############.....",
+    ".##########.......",
+    "..########........",
+    "...######.........",
+    "....#####.........",
+    "....#######.......",
+    "...####..###......",
+    "..###....####.....",
+    "..##......##......",
+    "..................",
+    ".................."
+]
+
+private let crashedSprite = [
+    "..................",
+    "..........####....",
+    ".........######...",
+    ".........##x####..",
+    ".........###x###..",
+    ".........#######..",
+    "........########..",
+    ".......########...",
+    ".....##########...",
+    "...############...",
+    "..############....",
+    "..##########......",
+    "...########.......",
+    "....#######.......",
+    ".....######.......",
+    ".....######.......",
+    "....##.####.......",
+    "...##...##........",
+    "...##...##........",
+    ".................."
+]
 
 struct ClaudeCrabIcon: View {
     let size: CGFloat
