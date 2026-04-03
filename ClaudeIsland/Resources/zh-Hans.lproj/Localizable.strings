@@ -1,0 +1,85 @@
+// MARK: - Menu View
+"Back" = "返回";
+"Behavior" = "行为设置";
+"Check for Updates" = "检查更新";
+"Checking..." = "检查中...";
+"Downloading..." = "下载中...";
+"Extracting..." = "解压中...";
+"Install & Relaunch" = "安装并重启";
+"Installing..." = "安装中...";
+"Update failed" = "更新失败";
+"Up to date" = "已是最新版本";
+"Retry" = "重试";
+
+// MARK: - Settings Labels
+"Launch at Login" = "登录时启动";
+"Claude Hooks" = "Claude Hooks";
+"Accessibility" = "辅助功能";
+"On" = "已开启";
+"Off" = "已关闭";
+"Enable" = "去开启";
+"Star on GitHub" = "在 GitHub 上 Star";
+"Quit" = "退出";
+
+// MARK: - Behavior Settings
+"全屏时隐藏" = "全屏时隐藏";
+"无活跃会话时自动隐藏" = "无活跃会话时自动隐藏";
+"智能抑制" = "智能抑制";
+"Agent 所在终端标签页在前台时不自动展开面板" = "Agent 所在终端标签页在前台时不自动展开面板";
+"鼠标离开时自动收起" = "鼠标离开时自动收起";
+"显示用量" = "显示用量";
+"在刘海面板顶部显示会话摘要数据" = "在刘海面板顶部显示会话摘要数据";
+
+// MARK: - Update States
+"v\(version)" = "v\(version)";
+
+// MARK: - Language Settings
+"Language" = "语言";
+"Chinese" = "中文";
+"English" = "English";
+"System" = "跟随系统";
+
+// MARK: - Screen Picker
+"Screen" = "显示器";
+"Automatic" = "自动";
+"Built-in or Main" = "内置或主屏幕";
+"Auto" = "自动";
+"Built-in" = "内置";
+"Main" = "主屏幕";
+
+// MARK: - Notification Sound
+"Notification Sound" = "通知声音";
+
+// MARK: - Chat View
+"Loading messages..." = "正在加载消息...";
+"No messages yet" = "暂无消息";
+"Message Claude..." = "给 Claude 发送消息...";
+"OpenCode sessions are currently read-only" = "OpenCode 会话当前为只读";
+"Open Claude Code in tmux to enable messaging" = "在 tmux 中打开 Claude Code 以启用消息功能";
+"1 new message" = "1 条新消息";
+"%d new messages" = "%d 条新消息";
+
+// MARK: - Approval Bar
+"Claude Code needs your input" = "Claude Code 需要你的输入";
+"Terminal" = "终端";
+"Deny" = "拒绝";
+"Allow" = "允许";
+
+// MARK: - Tool Status
+"Interrupted" = "已中断";
+"Subagent used %d tools:" = "子代理使用了 %d 个工具：";
+"+%d more tool uses" = "+%d 更多工具使用";
+
+// MARK: - Claude Instances View
+"No sessions" = "无会话";
+"Run Claude Code or OpenCode in terminal" = "在终端中运行 Claude Code 或 OpenCode";
+"Sessions" = "会话";
+"Active" = "活跃";
+"Attention" = "需关注";
+"OpenCode" = "OpenCode";
+"Needs your input" = "需要你的输入";
+"You:" = "你：";
+"Go to Terminal" = "前往终端";
+"Terminal" = "终端";
+"Deny" = "拒绝";
+"Allow" = "允许";

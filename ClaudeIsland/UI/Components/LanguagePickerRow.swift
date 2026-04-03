@@ -1,47 +1,38 @@
 //
-//  SoundPickerRow.swift
+//  LanguagePickerRow.swift
 //  ClaudeIsland
 //
-//  Notification sound selection picker for settings menu
+//  Language selection picker for settings menu
 //
 
-import AppKit
 import SwiftUI
 
-struct SoundPickerRow: View {
-    @ObservedObject var soundSelector: SoundSelector
+struct LanguagePickerRow: View {
     @State private var isHovered = false
-    @State private var selectedSound: NotificationSound = AppSettings.notificationSound
-
-    private var isExpanded: Bool {
-        soundSelector.isPickerExpanded
-    }
-
-    private func setExpanded(_ value: Bool) {
-        soundSelector.isPickerExpanded = value
-    }
+    @State private var isExpanded = false
+    @State private var selectedLanguage: AppLanguage = AppSettings.appLanguage
 
     var body: some View {
         VStack(spacing: 0) {
             // Main row - shows current selection
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    setExpanded(!isExpanded)
+                    isExpanded.toggle()
                 }
             } label: {
                 HStack(spacing: 10) {
-                    Image(systemName: "speaker.wave.2")
+                    Image(systemName: "globe")
                         .font(.system(size: 12))
                         .foregroundColor(textColor)
                         .frame(width: 16)
 
-                    Text(NSLocalizedString("Notification Sound", comment: ""))
+                    Text("Language")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(textColor)
 
                     Spacer()
 
-                    Text(selectedSound.rawValue)
+                    Text(selectedLanguage.displayName)
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.4))
                         .lineLimit(1)
@@ -60,32 +51,28 @@ struct SoundPickerRow: View {
             .buttonStyle(.plain)
             .onHover { isHovered = $0 }
 
-            // Expanded sound list
+            // Expanded language list
             if isExpanded {
                 ScrollView {
                     VStack(spacing: 2) {
-                        ForEach(NotificationSound.allCases, id: \.self) { sound in
-                            SoundOptionRowInline(
-                                sound: sound,
-                                isSelected: selectedSound == sound
+                        ForEach(AppLanguage.allCases, id: \.self) { language in
+                            LanguageOptionRow(
+                                language: language,
+                                isSelected: selectedLanguage == language
                             ) {
-                                // Play preview sound
-                                if let soundName = sound.soundName {
-                                    NSSound(named: soundName)?.play()
-                                }
-                                selectedSound = sound
-                                AppSettings.notificationSound = sound
+                                selectedLanguage = language
+                                AppSettings.appLanguage = language
                             }
                         }
                     }
                 }
-                .frame(maxHeight: CGFloat(min(NotificationSound.allCases.count, 6)) * 32)
+                .frame(maxHeight: CGFloat(min(AppLanguage.allCases.count, 4)) * 32)
                 .padding(.leading, 28)
                 .padding(.top, 4)
             }
         }
         .onAppear {
-            selectedSound = AppSettings.notificationSound
+            selectedLanguage = AppSettings.appLanguage
         }
     }
 
@@ -94,10 +81,10 @@ struct SoundPickerRow: View {
     }
 }
 
-// MARK: - Sound Option Row (Inline version)
+// MARK: - Language Option Row
 
-private struct SoundOptionRowInline: View {
-    let sound: NotificationSound
+private struct LanguageOptionRow: View {
+    let language: AppLanguage
     let isSelected: Bool
     let action: () -> Void
 
@@ -110,7 +97,7 @@ private struct SoundOptionRowInline: View {
                     .fill(isSelected ? TerminalColors.green : Color.white.opacity(0.2))
                     .frame(width: 6, height: 6)
 
-                Text(sound.rawValue)
+                Text(language.displayName)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white.opacity(isHovered ? 1.0 : 0.7))
 

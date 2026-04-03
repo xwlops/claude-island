@@ -25,11 +25,11 @@ struct ClaudeInstancesView: View {
 
     private var emptyState: some View {
         VStack(spacing: 8) {
-            Text("No sessions")
+            Text(NSLocalizedString("No sessions", comment: ""))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.white.opacity(0.4))
 
-            Text("Run Claude Code or OpenCode in terminal")
+            Text(NSLocalizedString("Run Claude Code or OpenCode in terminal", comment: ""))
                 .font(.system(size: 11))
                 .foregroundColor(.white.opacity(0.25))
         }
@@ -92,9 +92,9 @@ struct ClaudeInstancesView: View {
 
     private var usageSummary: some View {
         HStack(spacing: 8) {
-            UsagePill(label: "Sessions", value: "\(sessionMonitor.instances.count)")
-            UsagePill(label: "Active", value: "\(sessionMonitor.instances.filter { $0.phase == .processing || $0.phase == .compacting }.count)")
-            UsagePill(label: "Attention", value: "\(sessionMonitor.instances.filter(\.needsAttention).count)")
+            UsagePill(label: NSLocalizedString("Sessions", comment: ""), value: "\(sessionMonitor.instances.count)")
+            UsagePill(label: NSLocalizedString("Active", comment: ""), value: "\(sessionMonitor.instances.filter { $0.phase == .processing || $0.phase == .compacting }.count)")
+            UsagePill(label: NSLocalizedString("Attention", comment: ""), value: "\(sessionMonitor.instances.filter(\.needsAttention).count)")
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
@@ -199,7 +199,7 @@ struct InstanceRow: View {
                         .lineLimit(1)
 
                     if session.provider == .opencode {
-                        Text("OpenCode")
+                        Text(NSLocalizedString("OpenCode", comment: ""))
                             .font(.system(size: 9, weight: .semibold, design: .monospaced))
                             .foregroundColor(.white.opacity(0.55))
                             .padding(.horizontal, 5)
@@ -219,7 +219,7 @@ struct InstanceRow: View {
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
                             .foregroundColor(TerminalColors.amber.opacity(0.9))
                         if isInteractiveTool {
-                            Text("Needs your input")
+                            Text(NSLocalizedString("Needs your input", comment: ""))
                                 .font(.system(size: 11))
                                 .foregroundColor(.white.opacity(0.5))
                                 .lineLimit(1)
@@ -250,7 +250,7 @@ struct InstanceRow: View {
                     case "user":
                         // User message - prefix with "You:"
                         HStack(spacing: 4) {
-                            Text("You:")
+                            Text(NSLocalizedString("You:", comment: ""))
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
                             if let msg = session.lastMessage {
@@ -399,7 +399,7 @@ struct InlineApprovalButtons: View {
             Button {
                 onReject()
             } label: {
-                Text("Deny")
+                Text(NSLocalizedString("Deny", comment: ""))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.white.opacity(0.6))
                     .padding(.horizontal, 10)
@@ -414,7 +414,7 @@ struct InlineApprovalButtons: View {
             Button {
                 onApprove()
             } label: {
-                Text("Allow")
+                Text(NSLocalizedString("Allow", comment: ""))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.black)
                     .padding(.horizontal, 10)
@@ -481,7 +481,7 @@ struct CompactTerminalButton: View {
             HStack(spacing: 2) {
                 Image(systemName: "terminal")
                     .font(.system(size: 8, weight: .medium))
-                Text("Go to Terminal")
+                Text(NSLocalizedString("Go to Terminal", comment: ""))
                     .font(.system(size: 10, weight: .medium))
             }
             .foregroundColor(isEnabled ? .white.opacity(0.9) : .white.opacity(0.3))
@@ -509,7 +509,7 @@ struct TerminalButton: View {
             HStack(spacing: 3) {
                 Image(systemName: "terminal")
                     .font(.system(size: 9, weight: .medium))
-                Text("Terminal")
+                Text(NSLocalizedString("Terminal", comment: ""))
                     .font(.system(size: 11, weight: .medium))
             }
             .foregroundColor(isEnabled ? .black : .white.opacity(0.4))

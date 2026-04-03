@@ -31,6 +31,32 @@ enum NotificationSound: String, CaseIterable {
     }
 }
 
+enum AppLanguage: String, CaseIterable {
+    case system = "system"
+    case english = "en"
+    case chinese = "zh-Hans"
+
+    var displayName: String {
+        switch self {
+        case .system:
+            return NSLocalizedString("System", comment: "")
+        case .english:
+            return NSLocalizedString("English", comment: "")
+        case .chinese:
+            return NSLocalizedString("Chinese", comment: "")
+        }
+    }
+
+    func apply() {
+        if self == .system {
+            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        } else {
+            UserDefaults.standard.set([self.rawValue], forKey: "AppleLanguages")
+        }
+        UserDefaults.standard.synchronize()
+    }
+}
+
 enum AppSettings {
     private static let defaults = UserDefaults.standard
 
@@ -43,6 +69,7 @@ enum AppSettings {
         static let smartSuppression = "smartSuppression"
         static let collapseOnMouseLeave = "collapseOnMouseLeave"
         static let showUsageSummary = "showUsageSummary"
+        static let appLanguage = "appLanguage"
     }
 
     // MARK: - Notification Sound
@@ -84,5 +111,21 @@ enum AppSettings {
     static var showUsageSummary: Bool {
         get { defaults.object(forKey: Keys.showUsageSummary) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Keys.showUsageSummary) }
+    }
+
+    // MARK: - App Language
+
+    static var appLanguage: AppLanguage {
+        get {
+            guard let rawValue = defaults.string(forKey: Keys.appLanguage),
+                  let language = AppLanguage(rawValue: rawValue) else {
+                return .system // Default to system
+            }
+            return language
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: Keys.appLanguage)
+            newValue.apply()
+        }
     }
 }

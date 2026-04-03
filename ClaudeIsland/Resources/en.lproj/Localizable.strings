@@ -1,0 +1,85 @@
+// MARK: - Menu View
+"Back" = "Back";
+"Behavior" = "Behavior";
+"Check for Updates" = "Check for Updates";
+"Checking..." = "Checking...";
+"Downloading..." = "Downloading...";
+"Extracting..." = "Extracting...";
+"Install & Relaunch" = "Install & Relaunch";
+"Installing..." = "Installing...";
+"Update failed" = "Update failed";
+"Up to date" = "Up to date";
+"Retry" = "Retry";
+
+// MARK: - Settings Labels
+"Launch at Login" = "Launch at Login";
+"Claude Hooks" = "Claude Hooks";
+"Accessibility" = "Accessibility";
+"On" = "On";
+"Off" = "Off";
+"Enable" = "Enable";
+"Star on GitHub" = "Star on GitHub";
+"Quit" = "Quit";
+
+// MARK: - Behavior Settings
+"全屏时隐藏" = "Hide in Fullscreen";
+"无活跃会话时自动隐藏" = "Auto-hide When No Active Sessions";
+"智能抑制" = "Smart Suppression";
+"Agent 所在终端标签页在前台时不自动展开面板" = "Don't auto-expand when Agent's terminal tab is in foreground";
+"鼠标离开时自动收起" = "Collapse on Mouse Leave";
+"显示用量" = "Show Usage Summary";
+"在刘海面板顶部显示会话摘要数据" = "Display session summary data at top of notch panel";
+
+// MARK: - Update States
+"v\(version)" = "v\(version)";
+
+// MARK: - Language Settings
+"Language" = "Language";
+"Chinese" = "Chinese";
+"English" = "English";
+"System" = "System";
+
+// MARK: - Screen Picker
+"Screen" = "Screen";
+"Automatic" = "Automatic";
+"Built-in or Main" = "Built-in or Main";
+"Auto" = "Auto";
+"Built-in" = "Built-in";
+"Main" = "Main";
+
+// MARK: - Notification Sound
+"Notification Sound" = "Notification Sound";
+
+// MARK: - Chat View
+"Loading messages..." = "Loading messages...";
+"No messages yet" = "No messages yet";
+"Message Claude..." = "Message Claude...";
+"OpenCode sessions are currently read-only" = "OpenCode sessions are currently read-only";
+"Open Claude Code in tmux to enable messaging" = "Open Claude Code in tmux to enable messaging";
+"1 new message" = "1 new message";
+"%d new messages" = "%d new messages";
+
+// MARK: - Approval Bar
+"Claude Code needs your input" = "Claude Code needs your input";
+"Terminal" = "Terminal";
+"Deny" = "Deny";
+"Allow" = "Allow";
+
+// MARK: - Tool Status
+"Interrupted" = "Interrupted";
+"Subagent used %d tools:" = "Subagent used %d tools:";
+"+%d more tool uses" = "+%d more tool uses";
+
+// MARK: - Claude Instances View
+"No sessions" = "No sessions";
+"Run Claude Code or OpenCode in terminal" = "Run Claude Code or OpenCode in terminal";
+"Sessions" = "Sessions";
+"Active" = "Active";
+"Attention" = "Attention";
+"OpenCode" = "OpenCode";
+"Needs your input" = "Needs your input";
+"You:" = "You:";
+"Go to Terminal" = "Go to Terminal";
+"Terminal" = "Terminal";
+"Deny" = "Deny";
+"Allow" = "Allow";

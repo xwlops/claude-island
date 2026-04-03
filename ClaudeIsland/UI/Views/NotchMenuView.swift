@@ -41,6 +41,7 @@ struct NotchMenuView: View {
                 .padding(.vertical, 4)
 
             // Appearance settings
+            LanguagePickerRow()
             ScreenPickerRow(screenSelector: screenSelector)
             SoundPickerRow(soundSelector: soundSelector)
 
@@ -157,14 +158,14 @@ struct BehaviorSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Behavior")
+            Text(NSLocalizedString("Behavior", comment: ""))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(.white.opacity(0.45))
                 .padding(.horizontal, 12)
 
             VStack(spacing: 0) {
                 BehaviorToggleRow(
-                    title: "全屏时隐藏",
+                    title: NSLocalizedString("全屏时隐藏", comment: ""),
                     subtitle: nil,
                     isOn: $hideInFullscreen
                 ) {
@@ -174,7 +175,7 @@ struct BehaviorSection: View {
                 BehaviorDivider()
 
                 BehaviorToggleRow(
-                    title: "无活跃会话时自动隐藏",
+                    title: NSLocalizedString("无活跃会话时自动隐藏", comment: ""),
                     subtitle: nil,
                     isOn: $autoHideNoActiveSessions
                 ) {
@@ -184,8 +185,8 @@ struct BehaviorSection: View {
                 BehaviorDivider()
 
                 BehaviorToggleRow(
-                    title: "智能抑制",
-                    subtitle: "Agent 所在终端标签页在前台时不自动展开面板",
+                    title: NSLocalizedString("智能抑制", comment: ""),
+                    subtitle: NSLocalizedString("Agent 所在终端标签页在前台时不自动展开面板", comment: ""),
                     isOn: $smartSuppression
                 ) {
                     AppSettings.smartSuppression = smartSuppression
@@ -194,7 +195,7 @@ struct BehaviorSection: View {
                 BehaviorDivider()
 
                 BehaviorToggleRow(
-                    title: "鼠标离开时自动收起",
+                    title: NSLocalizedString("鼠标离开时自动收起", comment: ""),
                     subtitle: nil,
                     isOn: $collapseOnMouseLeave
                 ) {
@@ -204,8 +205,8 @@ struct BehaviorSection: View {
                 BehaviorDivider()
 
                 BehaviorToggleRow(
-                    title: "显示用量",
-                    subtitle: "在刘海面板顶部显示会话摘要数据",
+                    title: NSLocalizedString("显示用量", comment: ""),
+                    subtitle: NSLocalizedString("在刘海面板顶部显示会话摘要数据", comment: ""),
                     isOn: $showUsageSummary
                 ) {
                     AppSettings.showUsageSummary = showUsageSummary

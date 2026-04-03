@@ -245,7 +245,7 @@ struct ChatView: View {
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: .white.opacity(0.4)))
                 .scaleEffect(0.8)
-            Text("Loading messages...")
+            Text(NSLocalizedString("Loading messages...", comment: ""))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.white.opacity(0.4))
         }
@@ -259,7 +259,7 @@ struct ChatView: View {
             Image(systemName: "bubble.left.and.bubble.right")
                 .font(.system(size: 24))
                 .foregroundColor(.white.opacity(0.2))
-            Text("No messages yet")
+            Text(NSLocalizedString("No messages yet", comment: ""))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.white.opacity(0.4))
         }
@@ -815,7 +815,7 @@ struct SubagentToolsList: View {
         VStack(alignment: .leading, spacing: 2) {
             // Show count of older hidden tools at top
             if hiddenCount > 0 {
-                Text("+\(hiddenCount) more tool uses")
+                Text(String(format: NSLocalizedString("+%d more tool uses", comment: ""), hiddenCount))
                     .font(.system(size: 10))
                     .foregroundColor(.white.opacity(0.4))
             }
@@ -899,7 +899,7 @@ struct SubagentToolsSummary: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Subagent used \(tools.count) tools:")
+            Text(String(format: NSLocalizedString("Subagent used %d tools:", comment: ""), tools.count))
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.white.opacity(0.5))
 
@@ -978,7 +978,7 @@ struct ThinkingView: View {
 struct InterruptedMessageView: View {
     var body: some View {
         HStack {
-            Text("Interrupted")
+            Text(NSLocalizedString("Interrupted", comment: ""))
                 .font(.system(size: 13))
                 .foregroundColor(.red)
             Spacer()
@@ -1003,7 +1003,7 @@ struct ChatInteractivePromptBar: View {
                 Text(MCPToolFormatter.formatToolName("AskUserQuestion"))
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundColor(TerminalColors.amber)
-                Text("Claude Code needs your input")
+                Text(NSLocalizedString("Claude Code needs your input", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.5))
                     .lineLimit(1)
@@ -1022,7 +1022,7 @@ struct ChatInteractivePromptBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "terminal")
                         .font(.system(size: 11, weight: .medium))
-                    Text("Terminal")
+                    Text(NSLocalizedString("Terminal", comment: ""))
                         .font(.system(size: 13, weight: .medium))
                 }
                 .foregroundColor(isInTmux ? .black : .white.opacity(0.4))
@@ -1086,7 +1086,7 @@ struct ChatApprovalBar: View {
             Button {
                 onDeny()
             } label: {
-                Text("Deny")
+                Text(NSLocalizedString("Deny", comment: ""))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.white.opacity(0.7))
                     .padding(.horizontal, 16)
@@ -1102,7 +1102,7 @@ struct ChatApprovalBar: View {
             Button {
                 onApprove()
             } label: {
-                Text("Allow")
+                Text(NSLocalizedString("Allow", comment: ""))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.black)
                     .padding(.horizontal, 16)
@@ -1147,7 +1147,9 @@ struct NewMessagesIndicator: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 10, weight: .bold))
 
-                Text(count == 1 ? "1 new message" : "\(count) new messages")
+                Text(count == 1
+                    ? NSLocalizedString("1 new message", comment: "")
+                    : String(format: NSLocalizedString("%d new messages", comment: ""), count))
                     .font(.system(size: 12, weight: .medium))
             }
             .foregroundColor(.white)
