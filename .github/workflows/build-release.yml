@@ -15,8 +15,6 @@ jobs:
     runs-on: macos-15
     env:
       DIST_DIR: ${{ github.workspace }}/dist
-      ARCHIVE_PATH: ${{ runner.temp }}/ClaudeIsland.xcarchive
-      EXPORT_DIR: ${{ runner.temp }}/export
       APP_NAME: Claude Island.app
     steps:
       - name: Checkout code
@@ -33,6 +31,7 @@ jobs:
 
       - name: Build archive
         run: |
+          ARCHIVE_PATH="$RUNNER_TEMP/ClaudeIsland.xcarchive"
           xcodebuild archive \
             -project ClaudeIsland.xcodeproj \
             -scheme ClaudeIsland \
@@ -48,6 +47,8 @@ jobs:
 
       - name: Create DMG
         run: |
+          ARCHIVE_PATH="$RUNNER_TEMP/ClaudeIsland.xcarchive"
+          EXPORT_DIR="$RUNNER_TEMP/export"
           APP_PATH="$ARCHIVE_PATH/Products/Applications/$APP_NAME"
           STAGING_DIR="$EXPORT_DIR/dmg"
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
