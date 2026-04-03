@@ -65,9 +65,9 @@ jobs:
           test -d "$APP_PATH"
           mkdir -p "$DIST_DIR" "$STAGING_DIR"
           cp -R "$APP_PATH" "$STAGING_DIR/"
+          rm -f "$DMG_PATH"
 
           create-dmg \
-            --overwrite \
             --volname "Claude Island" \
             --window-size 640 400 \
             --icon-size 100 \
