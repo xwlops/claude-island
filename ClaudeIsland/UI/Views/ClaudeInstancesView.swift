@@ -266,12 +266,7 @@ struct InstanceRow: View {
                                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                                     .foregroundColor(phaseColor.opacity(0.92))
                             }
-                            if let input = session.lastMessage {
-                                Text(input)
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.white.opacity(0.58))
-                                .lineLimit(1)
-                            }
+                            // For tool calls, show the tool name only (input is typically empty for OpenCode)
                         }
                     case "user":
                         HStack(spacing: 4) {
@@ -282,7 +277,7 @@ struct InstanceRow: View {
                                 Text(msg)
                                     .font(.system(size: 12))
                                     .foregroundColor(.white.opacity(0.58))
-                                .lineLimit(1)
+                                    .lineLimit(1)
                             }
                         }
                     default:
