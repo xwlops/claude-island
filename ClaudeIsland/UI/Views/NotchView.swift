@@ -263,7 +263,7 @@ struct NotchView: View {
             HStack(spacing: 0) {
                 if showClosedActivity {
                     HStack(spacing: 4) {
-                        NotchDragonIcon(size: 14, color: headerStatusColor, animate: headerStatusShouldAnimate)
+                        NotchDragonIcon(size: 14, color: headerStatusColor, pose: closedDinoPose, animate: headerStatusShouldAnimate)
                             .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
                     }
                     .frame(width: 22)
@@ -287,7 +287,7 @@ struct NotchView: View {
     private var closedHeaderContent: some View {
         HStack(spacing: 7) {
             HStack(spacing: 4) {
-                NotchDragonIcon(size: 12, color: closedStatusColor, animate: headerStatusShouldAnimate)
+                NotchDragonIcon(size: 12, color: closedStatusColor, pose: closedDinoPose, animate: headerStatusShouldAnimate)
                     .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
             }
             .fixedSize()
@@ -467,6 +467,29 @@ struct NotchView: View {
         hasPendingPermission || isAnyProcessing || hasWaitingForInput || updateManager.hasUnseenUpdate
     }
 
+    private var closedDinoPose: NotchDinoPose {
+        if hasPendingPermission {
+            return .ducking
+        }
+        guard let session = summarizedSession else {
+            return .waiting
+        }
+        switch session.phase {
+        case .waitingForApproval:
+            return .ducking
+        case .waitingForInput:
+            return .jumping
+        case .processing:
+            return .running
+        case .compacting:
+            return .running
+        case .idle:
+            return .waiting
+        case .ended:
+            return .crashed
+        }
+    }
+
     private func compactClosedText(_ text: String, limit: Int = 26) -> String {
         let singleLine = text
             .replacingOccurrences(of: "\n", with: " ")
@@ -488,7 +511,7 @@ struct NotchView: View {
             // Show static crab only if not showing activity in headerRow
             // (headerRow handles crab + indicator when showClosedActivity is true)
             if !showClosedActivity {
-                NotchDragonIcon(size: 14, color: Color.white.opacity(0.78), animate: false)
+                NotchDragonIcon(size: 14, color: Color.white.opacity(0.78), pose: .waiting, animate: false)
                     .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: !showClosedActivity)
                     .padding(.leading, 8)
             }

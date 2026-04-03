@@ -8,18 +8,33 @@
 import Combine
 import SwiftUI
 
+enum NotchDinoPose {
+    case waiting
+    case running
+    case jumping
+    case ducking
+    case crashed
+}
+
 struct NotchDragonIcon: View {
     let size: CGFloat
     let color: Color
+    let pose: NotchDinoPose
     var animate: Bool = false
 
     @State private var framePhase: Int = 0
 
     private let animationTimer = Timer.publish(every: 0.18, on: .main, in: .common).autoconnect()
 
-    init(size: CGFloat = 16, color: Color = Color.white.opacity(0.85), animate: Bool = false) {
+    init(
+        size: CGFloat = 16,
+        color: Color = Color.white.opacity(0.85),
+        pose: NotchDinoPose = .running,
+        animate: Bool = false
+    ) {
         self.size = size
         self.color = color
+        self.pose = pose
         self.animate = animate
     }
 
@@ -28,8 +43,8 @@ struct NotchDragonIcon: View {
             let scale = size / 16.0
             let width: CGFloat = 18
             let xOffset = (canvasSize.width - width * scale) / 2
-            let legShift: CGFloat = animate && framePhase.isMultiple(of: 2) ? 1 : 0
-            let tailShift: CGFloat = animate && framePhase.isMultiple(of: 2) ? -1 : 0
+            let legShift: CGFloat = animate && pose == .running && framePhase.isMultiple(of: 2) ? 1 : 0
+            let tailShift: CGFloat = animate && pose == .running && framePhase.isMultiple(of: 2) ? -1 : 0
 
             drawPixels(dinoShadowPixels(legShift: legShift, tailShift: tailShift),
                        color: Color.black.opacity(0.35),
@@ -42,7 +57,7 @@ struct NotchDragonIcon: View {
                        context: &context,
                        scale: scale,
                        xOffset: xOffset)
-            drawPixels(dinoEyePixels, color: Color.white.opacity(0.95), context: &context, scale: scale, xOffset: xOffset)
+            drawPixels(dinoEyePixels, color: eyeColor, context: &context, scale: scale, xOffset: xOffset)
         }
         .frame(width: size * 1.12, height: size)
         .onReceive(animationTimer) { _ in
@@ -71,7 +86,7 @@ struct NotchDragonIcon: View {
         }
     }
 
-    private func dinoPixels(legShift: CGFloat, tailShift: CGFloat) -> [(CGFloat, CGFloat)] {
+    private func runningPixels(legShift: CGFloat, tailShift: CGFloat) -> [(CGFloat, CGFloat)] {
         [
             (10, 1), (11, 1), (12, 1), (13, 1),
             (9, 2), (10, 2), (11, 2), (12, 2), (13, 2), (14, 2),
@@ -96,12 +111,78 @@ struct NotchDragonIcon: View {
         ]
     }
 
+    private var waitingPixels: [(CGFloat, CGFloat)] {
+        runningPixels(legShift: 0, tailShift: 0)
+    }
+
+    private var jumpingPixels: [(CGFloat, CGFloat)] {
+        runningPixels(legShift: 0, tailShift: 0)
+            .map { (x, y) in
+                if y >= 17 {
+                    return (x, y - 2)
+                }
+                return (x, y - 3)
+            }
+            + [(9, 15), (10, 15)]
+    }
+
+    private var duckingPixels: [(CGFloat, CGFloat)] {
+        [
+            (6, 7), (7, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7),
+            (5, 8), (6, 8), (7, 8), (8, 8), (9, 8), (10, 8), (11, 8), (12, 8), (13, 8), (14, 8),
+            (3, 9), (4, 9), (5, 9), (6, 9), (7, 9), (8, 9), (9, 9), (10, 9), (11, 9), (12, 9), (13, 9),
+            (2, 10), (3, 10), (4, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10), (10, 10), (11, 10), (12, 10),
+            (1, 11), (2, 11), (3, 11), (4, 11), (5, 11), (6, 11), (7, 11), (8, 11), (9, 11), (10, 11),
+            (2, 12), (3, 12), (4, 12), (5, 12), (6, 12), (7, 12), (8, 12), (9, 12),
+            (4, 13), (5, 13), (6, 13), (7, 13), (8, 13),
+            (5, 14), (6, 14), (9, 14), (10, 14),
+            (5, 15), (6, 15), (9, 15), (10, 15)
+        ]
+    }
+
+    private var crashedPixels: [(CGFloat, CGFloat)] {
+        runningPixels(legShift: 0, tailShift: 0)
+            .map { (x, y) in
+                if x >= 10 { return (x, y + 1) }
+                return (x, y)
+            }
+            + [(12, 10), (13, 10), (14, 10)]
+    }
+
+    private func dinoPixels(legShift: CGFloat, tailShift: CGFloat) -> [(CGFloat, CGFloat)] {
+        switch pose {
+        case .waiting:
+            return waitingPixels
+        case .running:
+            return runningPixels(legShift: legShift, tailShift: tailShift)
+        case .jumping:
+            return jumpingPixels
+        case .ducking:
+            return duckingPixels
+        case .crashed:
+            return crashedPixels
+        }
+    }
+
     private func dinoShadowPixels(legShift: CGFloat, tailShift: CGFloat) -> [(CGFloat, CGFloat)] {
         dinoPixels(legShift: legShift, tailShift: tailShift).map { ($0.0 + 0.65, $0.1 + 0.65) }
     }
 
     private var dinoEyePixels: [(CGFloat, CGFloat)] {
-        [(11, 3)]
+        switch pose {
+        case .waiting:
+            return framePhase.isMultiple(of: 3) ? [(11, 3)] : [(11, 3), (11, 4)]
+        case .running, .jumping:
+            return [(11, 3)]
+        case .ducking:
+            return [(12, 8)]
+        case .crashed:
+            return [(11, 4), (12, 3)]
+        }
+    }
+
+    private var eyeColor: Color {
+        pose == .crashed ? color.opacity(0.9) : Color.white.opacity(0.95)
     }
 }
 
@@ -110,7 +191,7 @@ struct ClaudeCrabIcon: View {
     var animateLegs: Bool = false
 
     var body: some View {
-        NotchDragonIcon(size: size, animate: animateLegs)
+        NotchDragonIcon(size: size, pose: .running, animate: animateLegs)
     }
 }
 

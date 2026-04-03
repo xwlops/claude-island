@@ -199,6 +199,23 @@ struct InstanceRow: View {
         }
     }
 
+    private var dinoPose: NotchDinoPose {
+        switch session.phase {
+        case .waitingForApproval:
+            return .ducking
+        case .waitingForInput:
+            return .jumping
+        case .processing:
+            return .running
+        case .compacting:
+            return .running
+        case .idle:
+            return .waiting
+        case .ended:
+            return .crashed
+        }
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             stateIndicator
@@ -369,7 +386,7 @@ struct InstanceRow: View {
     @ViewBuilder
     private var stateIndicator: some View {
         HStack(spacing: 3) {
-            NotchDragonIcon(size: 13, color: phaseColor, animate: session.phase.isActive)
+            NotchDragonIcon(size: 13, color: phaseColor, pose: dinoPose, animate: session.phase.isActive)
             NotchFireStatusIcon(size: 10, color: phaseColor, animate: session.phase.needsAttention || session.phase.isActive)
         }
     }
