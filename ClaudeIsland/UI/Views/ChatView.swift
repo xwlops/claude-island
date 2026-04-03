@@ -305,21 +305,18 @@ struct ChatView: View {
                 .padding(.bottom, 20)
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isProcessing)
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: history.count)
-            }
-            .scaleEffect(x: 1, y: -1)
-            .onScrollGeometryChange(for: Bool.self) { geometry in
-                // Check if we're near the top of the content (which is bottom in inverted view)
-                // contentOffset.y near 0 means at bottom, larger means scrolled up
-                geometry.contentOffset.y < 50
-            } action: { wasAtBottom, isNowAtBottom in
-                if wasAtBottom && !isNowAtBottom {
-                    // User scrolled away from bottom
-                    pauseAutoscroll()
-                } else if !wasAtBottom && isNowAtBottom && isAutoscrollPaused {
-                    // User scrolled back to bottom
-                    resumeAutoscroll()
+                .detectScrollOffset { offset in
+                    let isNowAtBottom = offset < 50
+
+                    if isAutoscrollPaused && isNowAtBottom {
+                        resumeAutoscroll()
+                    } else if !isAutoscrollPaused && !isNowAtBottom && history.count > previousHistoryCount {
+                        pauseAutoscroll()
+                    }
                 }
             }
+            .scaleEffect(x: 1, y: -1)
+            .coordinateSpace(name: "scrollView")
             .onChange(of: shouldScrollToBottom) { _, shouldScroll in
                 if shouldScroll {
                     withAnimation(.easeOut(duration: 0.3)) {
