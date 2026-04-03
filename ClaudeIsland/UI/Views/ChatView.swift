@@ -14,7 +14,6 @@ struct ChatView: View {
     let sessionMonitor: ClaudeSessionMonitor
     @ObservedObject var viewModel: NotchViewModel
 
-    @State private var inputText: String = ""
     @State private var history: [ChatHistoryItem] = []
     @State private var session: SessionState
     @State private var isLoading: Bool = true
@@ -24,7 +23,6 @@ struct ChatView: View {
     @State private var newMessageCount: Int = 0
     @State private var previousHistoryCount: Int = 0
     @State private var isBottomVisible: Bool = true
-    @FocusState private var isInputFocused: Bool
 
     init(sessionId: String, initialSession: SessionState, sessionMonitor: ClaudeSessionMonitor, viewModel: NotchViewModel) {
         self.sessionId = sessionId
@@ -67,7 +65,7 @@ struct ChatView: View {
                     messageList
                 }
 
-                // Approval bar, interactive prompt, or Input bar
+                // Approval bar, interactive prompt, or read-only footer
                 if let tool = approvalTool {
                     if tool == "AskUserQuestion" {
                         // Interactive tools - show prompt to answer in terminal
@@ -84,7 +82,7 @@ struct ChatView: View {
                             ))
                     }
                 } else {
-                    inputBar
+                    readOnlyFooter
                         .transition(.opacity)
                 }
             }
@@ -156,22 +154,6 @@ struct ChatView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         shouldScrollToBottom = true
                     }
-                }
-            }
-        }
-        .onChange(of: canSendMessages) { _, canSend in
-            // Auto-focus input when tmux messaging becomes available
-            if canSend && !isInputFocused {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isInputFocused = true
-                }
-            }
-        }
-        .onAppear {
-            // Auto-focus input when chat opens and tmux messaging is available
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                if canSendMessages {
-                    isInputFocused = true
                 }
             }
         }
@@ -348,44 +330,22 @@ struct ChatView: View {
         }
     }
 
-    // MARK: - Input Bar
+    // MARK: - Read-only Footer
 
-    /// Can send messages only if session is in tmux
-    private var canSendMessages: Bool {
-        session.supportsInlineMessaging && session.isInTmux && session.tty != nil
-    }
-
-    private var inputBar: some View {
+    private var readOnlyFooter: some View {
         HStack(spacing: 10) {
-            TextField(inputPlaceholder, text: $inputText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundColor(canSendMessages ? .white : .white.opacity(0.4))
-                .focused($isInputFocused)
-                .disabled(!canSendMessages)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.white.opacity(canSendMessages ? 0.08 : 0.04))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
-                        )
-                )
-                .onSubmit {
-                    sendMessage()
-                }
+            Text(NSLocalizedString("Timeline only", comment: ""))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white.opacity(0.72))
 
-            Button {
-                sendMessage()
-            } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(!canSendMessages || inputText.isEmpty ? .white.opacity(0.2) : .white.opacity(0.9))
+            Spacer()
+
+            if session.isInTmux {
+                TerminalButton(
+                    isEnabled: true,
+                    onTap: { focusTerminal() }
+                )
             }
-            .buttonStyle(.plain)
-            .disabled(!canSendMessages || inputText.isEmpty)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -401,16 +361,6 @@ struct ChatView: View {
             .allowsHitTesting(false)
         }
         .zIndex(1) // Render above message list
-    }
-
-    private var inputPlaceholder: String {
-        if canSendMessages {
-            return "Message Claude..."
-        }
-        if session.provider == .opencode {
-            return "OpenCode sessions are currently read-only"
-        }
-        return "Open Claude Code in tmux to enable messaging"
     }
 
     // MARK: - Approval Bar
@@ -469,60 +419,6 @@ struct ChatView: View {
         sessionMonitor.denyPermission(sessionId: sessionId, reason: nil)
     }
 
-    private func sendMessage() {
-        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        inputText = ""
-
-        // Resume autoscroll when user sends a message
-        resumeAutoscroll()
-        shouldScrollToBottom = true
-
-        // Don't add to history here - it will be synced from JSONL when UserPromptSubmit event fires
-        Task {
-            await sendToSession(text)
-        }
-    }
-
-    private func sendToSession(_ text: String) async {
-        guard session.isInTmux else { return }
-        guard let tty = session.tty else { return }
-
-        if let target = await findTmuxTarget(tty: tty) {
-            _ = await ToolApprovalHandler.shared.sendMessage(text, to: target)
-        }
-    }
-
-    private func findTmuxTarget(tty: String) async -> TmuxTarget? {
-        guard let tmuxPath = await TmuxPathFinder.shared.getTmuxPath() else {
-            return nil
-        }
-
-        do {
-            let output = try await ProcessExecutor.shared.run(
-                tmuxPath,
-                arguments: ["list-panes", "-a", "-F", "#{session_name}:#{window_index}.#{pane_index} #{pane_tty}"]
-            )
-
-            let lines = output.components(separatedBy: "\n")
-            for line in lines {
-                let parts = line.components(separatedBy: " ")
-                guard parts.count >= 2 else { continue }
-
-                let target = parts[0]
-                let paneTty = parts[1].replacingOccurrences(of: "/dev/", with: "")
-
-                if paneTty == tty {
-                    return TmuxTarget(from: target)
-                }
-            }
-        } catch {
-            return nil
-        }
-
-        return nil
-    }
 }
 
 // MARK: - Message Item View

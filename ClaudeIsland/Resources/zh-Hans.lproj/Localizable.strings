@@ -99,10 +99,12 @@
 // MARK: - Claude Instances View
 "No sessions" = "无会话";
 "Run Claude Code or OpenCode in terminal" = "在终端中运行 Claude Code 或 OpenCode";
+"Claude Code" = "Claude Code";
 "Sessions" = "会话";
 "Active" = "活跃";
 "Attention" = "需关注";
 "OpenCode" = "OpenCode";
+"Timeline only" = "仅查看时间线";
 "Needs your input" = "需要你的输入";
 "You:" = "你：";
 "Go to Terminal" = "前往终端";

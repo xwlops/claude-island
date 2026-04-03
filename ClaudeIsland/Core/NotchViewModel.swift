@@ -234,28 +234,12 @@ class NotchViewModel: ObservableObject {
     func notchOpen(reason: NotchOpenReason = .unknown) {
         openReason = reason
         status = .opened
-
-        // Don't restore chat on notification - show instances list instead
-        if reason == .notification {
-            currentChatSession = nil
-            return
-        }
-
-        // Restore chat session if we had one open before
-        if let chatSession = currentChatSession {
-            // Avoid unnecessary updates if already showing this chat
-            if case .chat(let current) = contentType, current.sessionId == chatSession.sessionId {
-                return
-            }
-            contentType = .chat(chatSession)
-        }
+        currentChatSession = nil
+        contentType = .instances
     }
 
     func notchClose() {
-        // Save chat session before closing if in chat mode
-        if case .chat(let session) = contentType {
-            currentChatSession = session
-        }
+        currentChatSession = nil
         status = .closed
         contentType = .instances
     }
@@ -274,12 +258,9 @@ class NotchViewModel: ObservableObject {
         contentType = contentType == .menu ? .instances : .menu
     }
 
-    func showChat(for session: SessionState) {
-        // Avoid unnecessary updates if already showing this chat
-        if case .chat(let current) = contentType, current.sessionId == session.sessionId {
-            return
-        }
-        contentType = .chat(session)
+    func showChat(for _: SessionState) {
+        currentChatSession = nil
+        contentType = .instances
     }
 
     /// Go back to instances list and clear saved chat state

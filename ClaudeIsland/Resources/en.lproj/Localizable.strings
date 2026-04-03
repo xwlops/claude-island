@@ -99,10 +99,12 @@
 // MARK: - Claude Instances View
 "No sessions" = "No sessions";
 "Run Claude Code or OpenCode in terminal" = "Run Claude Code or OpenCode in terminal";
+"Claude Code" = "Claude Code";
 "Sessions" = "Sessions";
 "Active" = "Active";
 "Attention" = "Attention";
 "OpenCode" = "OpenCode";
+"Timeline only" = "Timeline only";
 "Needs your input" = "Needs your input";
 "You:" = "You:";
 "Go to Terminal" = "Go to Terminal";

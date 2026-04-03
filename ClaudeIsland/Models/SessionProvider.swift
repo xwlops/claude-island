@@ -7,9 +7,9 @@ enum SessionProvider: String, Equatable, Sendable {
     var displayName: String {
         switch self {
         case .claude:
-            return "Claude Code"
+            return NSLocalizedString("Claude Code", comment: "")
         case .opencode:
-            return "OpenCode"
+            return NSLocalizedString("OpenCode", comment: "")
         }
     }
 

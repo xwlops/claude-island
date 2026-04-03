@@ -263,7 +263,7 @@ struct NotchView: View {
             HStack(spacing: 0) {
                 if showClosedActivity {
                     HStack(spacing: 4) {
-                        NotchDragonIcon(size: 14, animate: isProcessing)
+                        NotchDragonIcon(size: 14, color: headerStatusColor, animate: headerStatusShouldAnimate)
                             .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
                     }
                     .frame(width: 22)
@@ -287,7 +287,7 @@ struct NotchView: View {
     private var closedHeaderContent: some View {
         HStack(spacing: 7) {
             HStack(spacing: 4) {
-                NotchDragonIcon(size: 12, animate: headerStatusShouldAnimate)
+                NotchDragonIcon(size: 12, color: closedStatusColor, animate: headerStatusShouldAnimate)
                     .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
             }
             .fixedSize()
@@ -488,7 +488,7 @@ struct NotchView: View {
             // Show static crab only if not showing activity in headerRow
             // (headerRow handles crab + indicator when showClosedActivity is true)
             if !showClosedActivity {
-                NotchDragonIcon(size: 14, animate: false)
+                NotchDragonIcon(size: 14, color: Color.white.opacity(0.78), animate: false)
                     .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: !showClosedActivity)
                     .padding(.leading, 8)
             }
@@ -532,8 +532,7 @@ struct NotchView: View {
             switch viewModel.contentType {
             case .instances:
                 ClaudeInstancesView(
-                    sessionMonitor: sessionMonitor,
-                    viewModel: viewModel
+                    sessionMonitor: sessionMonitor
                 )
             case .menu:
                 NotchMenuView(viewModel: viewModel)
