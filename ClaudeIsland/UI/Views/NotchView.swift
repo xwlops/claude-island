@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import Combine
 import CoreGraphics
 import SwiftUI
 
@@ -62,7 +63,7 @@ struct NotchView: View {
     private var closedNotchSize: CGSize {
         let widthScale: CGFloat = 0.84
         let heightScale: CGFloat = 0.9
-        CGSize(
+        return CGSize(
             width: max(152, viewModel.deviceNotchRect.width * widthScale),
             height: max(28, viewModel.deviceNotchRect.height * heightScale)
         )
