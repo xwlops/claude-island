@@ -146,10 +146,11 @@ class ClaudeSessionMonitor: ObservableObject {
 
         openCodePollingTask = Task {
             while !Task.isCancelled {
-                let sessions = await OpenCodeMonitor.shared.fetchSessions()
-                await SessionStore.shared.process(
-                    .providerSessionsUpdated(provider: .opencode, sessions: sessions)
-                )
+                if let sessions = await OpenCodeMonitor.shared.fetchSessions() {
+                    await SessionStore.shared.process(
+                        .providerSessionsUpdated(provider: .opencode, sessions: sessions)
+                    )
+                }
 
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
             }

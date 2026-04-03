@@ -7,7 +7,7 @@ actor OpenCodeMonitor {
 
     private init() {}
 
-    func fetchSessions(limit: Int = 20) async -> [SessionState] {
+    func fetchSessions(limit: Int = 8) async -> [SessionState]? {
         guard FileManager.default.fileExists(atPath: dbPath) else { return [] }
 
         let sql = """
@@ -18,7 +18,7 @@ actor OpenCodeMonitor {
         limit \(limit);
         """
 
-        guard let rows: [OpenCodeSessionRow] = await query(sql) else { return [] }
+        guard let rows: [OpenCodeSessionRow] = await query(sql) else { return nil }
 
         var sessions: [SessionState] = []
         for row in rows {
@@ -33,8 +33,15 @@ actor OpenCodeMonitor {
         select id, session_id, time_created, time_updated, data
         from message
         where session_id = '\(escaped(sessionId))'
-        order by time_created asc;
+        order by time_created desc
+        limit 80;
         """
+
+        guard let messageRows: [OpenCodeMessageRow] = await query(messageSql), !messageRows.isEmpty else { return [] }
+
+        let sortedMessageRows = messageRows.sorted { $0.timeCreated < $1.timeCreated }
+        let messageIds = sortedMessageRows.map(\.id).map { escaped($0) }
+        let inClause = messageIds.map { "'\($0)'" }.joined(separator: ",")
         let partSql = """
         select
             id,
@@ -42,10 +49,9 @@ actor OpenCodeMonitor {
             data
         from part
         where session_id = '\(escaped(sessionId))'
+          and message_id in (\(inClause))
         order by time_created asc;
         """
-
-        guard let messageRows: [OpenCodeMessageRow] = await query(messageSql) else { return [] }
         let partRows: [OpenCodePartRow] = await query(partSql) ?? []
 
         var partsByMessageId: [String: [OpenCodePartPayload]] = [:]
@@ -56,7 +62,7 @@ actor OpenCodeMonitor {
             partsByMessageId[row.messageId, default: []].append(payload)
         }
 
-        return messageRows.compactMap { row in
+        return sortedMessageRows.compactMap { row in
             guard let data = row.data.data(using: .utf8),
                   let payload = try? decoder.decode(OpenCodeMessagePayload.self, from: data) else { return nil }
             return OpenCodeMessage(
@@ -116,7 +122,8 @@ actor OpenCodeMonitor {
             }
         }
 
-        let title = row.title.hasPrefix("New session -") ? nil : row.title
+        let rawTitle = row.title ?? ""
+        let title = rawTitle.hasPrefix("New session -") ? nil : rawTitle
         let conversationInfo = ConversationInfo(
             summary: title,
             lastMessage: lastMessage,
@@ -307,7 +314,7 @@ actor OpenCodeMonitor {
 private struct OpenCodeSessionRow: Decodable {
     let id: String
     let directory: String
-    let title: String
+    let title: String?
     let timeCreated: Int64
     let timeUpdated: Int64
 
