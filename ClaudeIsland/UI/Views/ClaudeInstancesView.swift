@@ -199,14 +199,6 @@ struct InstanceRow: View {
         }
     }
 
-    private var headlineTitle: String {
-        let prompt = session.firstUserMessage ?? session.displayTitle
-        if prompt == session.projectName {
-            return prompt
-        }
-        return "\(session.projectName) · \(prompt)"
-    }
-
     private var dinoPose: NotchDinoPose {
         switch session.phase {
         case .waitingForApproval:
@@ -231,7 +223,7 @@ struct InstanceRow: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top, spacing: 8) {
-                    Text(headlineTitle)
+                    Text(session.displayTitle)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                         .lineLimit(1)
