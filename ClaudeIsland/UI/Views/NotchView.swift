@@ -13,7 +13,7 @@ import SwiftUI
 // Corner radius constants
 private let cornerRadiusInsets = (
     opened: (top: CGFloat(19), bottom: CGFloat(24)),
-    closed: (top: CGFloat(6), bottom: CGFloat(14))
+    closed: (top: CGFloat(5), bottom: CGFloat(11))
 )
 
 struct NotchView: View {
@@ -28,6 +28,7 @@ struct NotchView: View {
     @State private var isHovering: Bool = false
     @State private var isBouncing: Bool = false
     @State private var isBehaviorHidden: Bool = false
+    @State private var isClosedStatusPulsing: Bool = false
 
     private let visibilityTimer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 
@@ -60,12 +61,18 @@ struct NotchView: View {
 
     // MARK: - Sizing
 
+    private var closedNotchHeight: CGFloat {
+        22
+    }
+
+    private var closedMaximumWidth: CGFloat {
+        max(148, viewModel.deviceNotchRect.width * 0.62)
+    }
+
     private var closedNotchSize: CGSize {
-        let widthScale: CGFloat = 0.62
-        let heightScale: CGFloat = 0.78
         return CGSize(
-            width: max(108, viewModel.deviceNotchRect.width * widthScale),
-            height: max(24, viewModel.deviceNotchRect.height * heightScale)
+            width: closedMaximumWidth,
+            height: closedNotchHeight
         )
     }
 
@@ -192,6 +199,7 @@ struct NotchView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             sessionMonitor.startMonitoring()
+            isClosedStatusPulsing = true
             // On non-notched devices, keep visible so users have a target to interact with
             if !viewModel.hasPhysicalNotch {
                 isVisible = true
@@ -229,7 +237,7 @@ struct NotchView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header row - always present, contains crab and spinner that persist across states
             headerRow
-                .frame(height: max(24, closedNotchSize.height))
+                .frame(height: closedNotchHeight)
 
             // Main content only when opened
             if viewModel.status == .opened {
@@ -288,46 +296,41 @@ struct NotchView: View {
     }
 
     private var closedHeaderContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
             HStack(spacing: 4) {
-                ClaudeCrabIcon(size: 13, animateLegs: isProcessing)
+                ClaudeCrabIcon(size: 12, animateLegs: isProcessing)
                     .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
 
                 if hasPendingPermission {
-                    PermissionIndicatorIcon(size: 12, color: Color(red: 0.85, green: 0.47, blue: 0.34))
+                    PermissionIndicatorIcon(size: 11, color: Color(red: 0.85, green: 0.47, blue: 0.34))
                         .matchedGeometryEffect(id: "status-indicator", in: activityNamespace, isSource: showClosedActivity)
                 }
             }
+            .fixedSize()
 
             if let summary = closedSummaryText {
                 Text(summary)
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
                     .foregroundColor(.white.opacity(0.9))
                     .lineLimit(1)
                     .truncationMode(.tail)
-                    .frame(maxWidth: 186, alignment: .leading)
+                    .frame(maxWidth: closedSummaryTextWidth, alignment: .leading)
+                    .layoutPriority(1)
 
                 if closedSummaryCount > 1 {
                     Text("\(closedSummaryCount)")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .font(.system(size: 9.5, weight: .bold, design: .monospaced))
                         .foregroundColor(.white.opacity(0.6))
+                        .fixedSize()
                 }
             }
 
-            if isProcessing || hasPendingPermission {
-                ProcessingSpinner()
-                    .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
-            } else if hasWaitingForInput {
-                ReadyForInputIndicatorIcon(size: 12, color: TerminalColors.green)
-                    .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
-            } else if updateManager.hasUnseenUpdate {
-                Circle()
-                    .fill(TerminalColors.green)
-                    .frame(width: 5, height: 5)
-            }
+            closedStatusIndicator
         }
-        .padding(.horizontal, closedSummaryText == nil ? 12 : 14)
-        .frame(height: closedNotchSize.height)
+        .padding(.horizontal, closedSummaryText == nil ? 10 : 12)
+        .frame(height: closedNotchHeight)
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(maxWidth: closedMaximumWidth)
     }
 
     private var closedSummaryText: String? {
@@ -335,25 +338,32 @@ struct NotchView: View {
 
         if hasPendingPermission, let tool = session.pendingToolName {
             let toolLabel = MCPToolFormatter.formatToolName(tool)
-            let detail = compactClosedText(session.pendingToolInput ?? session.displayTitle)
-            return "\(toolLabel): \(detail)"
+            return "Approve: \(compactClosedText(toolLabel, limit: 16))"
         }
 
-        if isAnyProcessing {
+        if session.phase == .compacting {
+            return "Compact: \(compactClosedText(session.displayTitle, limit: 18))"
+        }
+
+        if session.phase == .processing || isAnyProcessing {
             if let tool = session.lastToolName {
                 let toolLabel = MCPToolFormatter.formatToolName(tool)
-                let detail = compactClosedText(session.lastMessage ?? session.displayTitle)
+                let detail = compactClosedText(session.lastMessage ?? session.displayTitle, limit: 18)
                 return "\(toolLabel): \(detail)"
             }
 
-            return compactClosedText(session.displayTitle)
+            return "Run: \(compactClosedText(session.displayTitle, limit: 18))"
         }
 
-        if hasWaitingForInput {
-            return compactClosedText(session.displayTitle)
+        if session.phase == .waitingForInput || hasWaitingForInput {
+            return "Read: \(compactClosedText(session.displayTitle, limit: 18))"
         }
 
-        return nil
+        if updateManager.hasUnseenUpdate {
+            return "Update available"
+        }
+
+        return compactClosedText(session.displayTitle, limit: 16)
     }
 
     private var summarizedSession: SessionState? {
@@ -388,17 +398,77 @@ struct NotchView: View {
         return sessionMonitor.instances.count
     }
 
-    private func compactClosedText(_ text: String) -> String {
+    private var closedSummaryTextWidth: CGFloat {
+        let trailingWidth: CGFloat = closedSummaryCount > 1 ? 26 : 16
+        let leadingWidth: CGFloat = hasPendingPermission ? 38 : 22
+        return max(56, closedMaximumWidth - leadingWidth - trailingWidth - 24)
+    }
+
+    @ViewBuilder
+    private var closedStatusIndicator: some View {
+        Circle()
+            .fill(closedStatusColor)
+            .frame(width: 6, height: 6)
+            .scaleEffect(closedStatusShouldPulse && isClosedStatusPulsing ? 1.0 : 0.72)
+            .opacity(closedStatusShouldPulse ? (isClosedStatusPulsing ? 1.0 : 0.42) : 0.82)
+            .animation(
+                closedStatusShouldPulse
+                    ? .easeInOut(duration: 0.85).repeatForever(autoreverses: true)
+                    : .easeOut(duration: 0.2),
+                value: isClosedStatusPulsing
+            )
+            .fixedSize()
+            .accessibilityLabel(Text(closedStatusAccessibilityLabel))
+    }
+
+    private var closedStatusColor: Color {
+        if hasPendingPermission {
+            return TerminalColors.amber
+        }
+
+        guard let session = summarizedSession else {
+            return updateManager.hasUnseenUpdate ? TerminalColors.blue : TerminalColors.dim
+        }
+
+        switch session.phase {
+        case .waitingForApproval:
+            return TerminalColors.amber
+        case .waitingForInput:
+            return TerminalColors.green
+        case .processing:
+            return TerminalColors.cyan
+        case .compacting:
+            return TerminalColors.magenta
+        case .idle, .ended:
+            return updateManager.hasUnseenUpdate ? TerminalColors.blue : TerminalColors.dim
+        }
+    }
+
+    private var closedStatusShouldPulse: Bool {
+        hasPendingPermission || isAnyProcessing || hasWaitingForInput || updateManager.hasUnseenUpdate
+    }
+
+    private var closedStatusAccessibilityLabel: String {
+        if hasPendingPermission {
+            return "Waiting for approval"
+        }
+        if let session = summarizedSession {
+            return SessionPhaseHelpers.phaseDescription(for: session.phase)
+        }
+        return updateManager.hasUnseenUpdate ? "Update available" : "Idle"
+    }
+
+    private func compactClosedText(_ text: String, limit: Int = 26) -> String {
         let singleLine = text
             .replacingOccurrences(of: "\n", with: " ")
             .replacingOccurrences(of: "\t", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if singleLine.count <= 26 {
+        if singleLine.count <= limit {
             return singleLine
         }
 
-        return String(singleLine.prefix(26)) + "…"
+        return String(singleLine.prefix(limit)) + "…"
     }
 
     // MARK: - Opened Header Content
