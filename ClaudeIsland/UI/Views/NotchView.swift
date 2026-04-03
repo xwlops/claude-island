@@ -61,11 +61,11 @@ struct NotchView: View {
     // MARK: - Sizing
 
     private var closedNotchSize: CGSize {
-        let widthScale: CGFloat = 0.84
-        let heightScale: CGFloat = 0.9
+        let widthScale: CGFloat = 0.62
+        let heightScale: CGFloat = 0.78
         return CGSize(
-            width: max(152, viewModel.deviceNotchRect.width * widthScale),
-            height: max(28, viewModel.deviceNotchRect.height * heightScale)
+            width: max(108, viewModel.deviceNotchRect.width * widthScale),
+            height: max(24, viewModel.deviceNotchRect.height * heightScale)
         )
     }
 
@@ -105,11 +105,6 @@ struct NotchView: View {
         case .opened:
             return viewModel.openedSize
         }
-    }
-
-    /// Width of the closed content (notch + any expansion)
-    private var closedContentWidth: CGFloat {
-        closedNotchSize.width + expansionWidth
     }
 
     // MARK: - Corner Radii
@@ -256,58 +251,154 @@ struct NotchView: View {
 
     @ViewBuilder
     private var headerRow: some View {
-        HStack(spacing: 0) {
-            // Left side - crab + optional permission indicator (visible when processing, pending, or waiting for input)
-            if showClosedActivity {
-                HStack(spacing: 4) {
-                    ClaudeCrabIcon(size: 14, animateLegs: isProcessing)
-                        .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
+        if viewModel.status == .opened {
+            HStack(spacing: 0) {
+                if showClosedActivity {
+                    HStack(spacing: 4) {
+                        ClaudeCrabIcon(size: 14, animateLegs: isProcessing)
+                            .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
 
-                    // Permission indicator only (amber) - waiting for input shows checkmark on right
-                    if hasPendingPermission {
-                        PermissionIndicatorIcon(size: 14, color: Color(red: 0.85, green: 0.47, blue: 0.34))
-                            .matchedGeometryEffect(id: "status-indicator", in: activityNamespace, isSource: showClosedActivity)
+                        if hasPendingPermission {
+                            PermissionIndicatorIcon(size: 14, color: Color(red: 0.85, green: 0.47, blue: 0.34))
+                                .matchedGeometryEffect(id: "status-indicator", in: activityNamespace, isSource: showClosedActivity)
+                        }
+                    }
+                    .frame(width: 20 + (hasPendingPermission ? 18 : 0))
+                    .padding(.leading, 8)
+                }
+
+                openedHeaderContent
+
+                if showClosedActivity {
+                    if isProcessing || hasPendingPermission {
+                        ProcessingSpinner()
+                            .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
+                            .frame(width: 20)
+                    } else if hasWaitingForInput {
+                        ReadyForInputIndicatorIcon(size: 14, color: TerminalColors.green)
+                            .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
+                            .frame(width: 20)
                     }
                 }
-                .frame(width: viewModel.status == .opened ? nil : sideWidth + (hasPendingPermission ? 18 : 0))
-                .padding(.leading, viewModel.status == .opened ? 8 : 0)
             }
+            .frame(height: closedNotchSize.height)
+        } else {
+            closedHeaderContent
+        }
+    }
 
-            // Center content
-            if viewModel.status == .opened {
-                // Opened: show header content
-                openedHeaderContent
-            } else if !showClosedActivity {
-                // Closed without activity: empty space
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width: closedNotchSize.width - 20)
-            } else {
-                // Closed with activity: black spacer (with optional bounce)
-                Rectangle()
-                    .fill(.black)
-                    .frame(width: closedNotchSize.width - cornerRadiusInsets.closed.top + (isBouncing ? 16 : 0))
-            }
+    private var closedHeaderContent: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 4) {
+                ClaudeCrabIcon(size: 13, animateLegs: isProcessing)
+                    .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
 
-            // Right side - spinner when processing/pending, checkmark when waiting for input
-            if showClosedActivity {
-                if isProcessing || hasPendingPermission {
-                    ProcessingSpinner()
-                        .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
-                        .frame(width: viewModel.status == .opened ? 20 : sideWidth)
-                } else if hasWaitingForInput {
-                    // Checkmark for waiting-for-input on the right side
-                    ReadyForInputIndicatorIcon(size: 14, color: TerminalColors.green)
-                        .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
-                        .frame(width: viewModel.status == .opened ? 20 : sideWidth)
+                if hasPendingPermission {
+                    PermissionIndicatorIcon(size: 12, color: Color(red: 0.85, green: 0.47, blue: 0.34))
+                        .matchedGeometryEffect(id: "status-indicator", in: activityNamespace, isSource: showClosedActivity)
                 }
             }
+
+            if let summary = closedSummaryText {
+                Text(summary)
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.9))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 186, alignment: .leading)
+
+                if closedSummaryCount > 1 {
+                    Text("\(closedSummaryCount)")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+            }
+
+            if isProcessing || hasPendingPermission {
+                ProcessingSpinner()
+                    .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
+            } else if hasWaitingForInput {
+                ReadyForInputIndicatorIcon(size: 12, color: TerminalColors.green)
+                    .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
+            } else if updateManager.hasUnseenUpdate {
+                Circle()
+                    .fill(TerminalColors.green)
+                    .frame(width: 5, height: 5)
+            }
         }
+        .padding(.horizontal, closedSummaryText == nil ? 12 : 14)
         .frame(height: closedNotchSize.height)
     }
 
-    private var sideWidth: CGFloat {
-        max(0, closedNotchSize.height - 12) + 10
+    private var closedSummaryText: String? {
+        guard let session = summarizedSession else { return nil }
+
+        if hasPendingPermission, let tool = session.pendingToolName {
+            let toolLabel = MCPToolFormatter.formatToolName(tool)
+            let detail = compactClosedText(session.pendingToolInput ?? session.displayTitle)
+            return "\(toolLabel): \(detail)"
+        }
+
+        if isAnyProcessing {
+            if let tool = session.lastToolName {
+                let toolLabel = MCPToolFormatter.formatToolName(tool)
+                let detail = compactClosedText(session.lastMessage ?? session.displayTitle)
+                return "\(toolLabel): \(detail)"
+            }
+
+            return compactClosedText(session.displayTitle)
+        }
+
+        if hasWaitingForInput {
+            return compactClosedText(session.displayTitle)
+        }
+
+        return nil
+    }
+
+    private var summarizedSession: SessionState? {
+        let candidates: [SessionState]
+        if hasPendingPermission {
+            candidates = sessionMonitor.instances.filter { $0.phase.isWaitingForApproval }
+        } else if isAnyProcessing {
+            candidates = sessionMonitor.instances.filter { $0.phase == .processing || $0.phase == .compacting }
+        } else if hasWaitingForInput {
+            candidates = sessionMonitor.instances.filter { $0.phase == .waitingForInput }
+        } else {
+            candidates = sessionMonitor.instances
+        }
+
+        return candidates.sorted { lhs, rhs in
+            let lhsDate = lhs.lastUserMessageDate ?? lhs.lastActivity
+            let rhsDate = rhs.lastUserMessageDate ?? rhs.lastActivity
+            return lhsDate > rhsDate
+        }.first
+    }
+
+    private var closedSummaryCount: Int {
+        if hasPendingPermission {
+            return sessionMonitor.instances.filter { $0.phase.isWaitingForApproval }.count
+        }
+        if isAnyProcessing {
+            return sessionMonitor.instances.filter { $0.phase == .processing || $0.phase == .compacting }.count
+        }
+        if hasWaitingForInput {
+            return sessionMonitor.instances.filter { $0.phase == .waitingForInput }.count
+        }
+        return sessionMonitor.instances.count
+    }
+
+    private func compactClosedText(_ text: String) -> String {
+        let singleLine = text
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\t", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if singleLine.count <= 26 {
+            return singleLine
+        }
+
+        return String(singleLine.prefix(26)) + "…"
     }
 
     // MARK: - Opened Header Content
