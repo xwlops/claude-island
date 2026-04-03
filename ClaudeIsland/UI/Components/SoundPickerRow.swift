@@ -41,7 +41,7 @@ struct SoundPickerRow: View {
 
                     Spacer()
 
-                    Text(selectedSound.rawValue)
+                    Text(selectedSound.displayName)
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.4))
                         .lineLimit(1)
@@ -110,7 +110,7 @@ private struct SoundOptionRowInline: View {
                     .fill(isSelected ? TerminalColors.green : Color.white.opacity(0.2))
                     .frame(width: 6, height: 6)
 
-                Text(sound.rawValue)
+                Text(sound.displayName)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white.opacity(isHovered ? 1.0 : 0.7))
 

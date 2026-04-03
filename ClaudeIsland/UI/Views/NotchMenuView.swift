@@ -308,7 +308,7 @@ struct UpdateRow: View {
                 .frame(width: 16)
 
                 // Label
-                Text(label)
+                Text(NSLocalizedString(label, comment: ""))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(labelColor)
 
@@ -345,7 +345,7 @@ struct UpdateRow: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(TerminalColors.green)
-                Text("Up to date")
+                Text(NSLocalizedString("Up to date", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(TerminalColors.green)
             }
@@ -360,7 +360,8 @@ struct UpdateRow: View {
                 Circle()
                     .fill(TerminalColors.green)
                     .frame(width: 6, height: 6)
-                Text("v\(version)")
+                Text(String(format: NSLocalizedString("v%@",
+                                                     comment: ""), version))
                     .font(.system(size: 11))
                     .foregroundColor(TerminalColors.green)
             }
@@ -392,7 +393,8 @@ struct UpdateRow: View {
                 Circle()
                     .fill(TerminalColors.green)
                     .frame(width: 6, height: 6)
-                Text("v\(version)")
+                Text(String(format: NSLocalizedString("v%@",
+                                                     comment: ""), version))
                     .font(.system(size: 11))
                     .foregroundColor(TerminalColors.green)
             }
@@ -532,7 +534,7 @@ struct AccessibilityRow: View {
                 .foregroundColor(textColor)
                 .frame(width: 16)
 
-            Text("Accessibility")
+            Text(NSLocalizedString("Accessibility", comment: ""))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(textColor)
 
@@ -543,12 +545,12 @@ struct AccessibilityRow: View {
                     .fill(TerminalColors.green)
                     .frame(width: 6, height: 6)
 
-                Text("On")
+                Text(NSLocalizedString("On", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.4))
             } else {
                 Button(action: openAccessibilitySettings) {
-                    Text("Enable")
+                    Text(NSLocalizedString("Enable", comment: ""))
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.black)
                         .padding(.horizontal, 10)
@@ -600,7 +602,7 @@ struct MenuRow: View {
                     .foregroundColor(textColor)
                     .frame(width: 16)
 
-                Text(label)
+                Text(NSLocalizedString(label, comment: ""))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(textColor)
 
@@ -641,7 +643,7 @@ struct MenuToggleRow: View {
                     .foregroundColor(textColor)
                     .frame(width: 16)
 
-                Text(label)
+                Text(NSLocalizedString(label, comment: ""))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(textColor)
 
@@ -651,7 +653,7 @@ struct MenuToggleRow: View {
                     .fill(isOn ? TerminalColors.green : Color.white.opacity(0.3))
                     .frame(width: 6, height: 6)
 
-                Text(isOn ? "On" : "Off")
+                Text(NSLocalizedString(isOn ? "On" : "Off", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.4))
             }

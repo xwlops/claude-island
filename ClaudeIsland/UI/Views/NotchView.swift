@@ -13,7 +13,7 @@ import SwiftUI
 // Corner radius constants
 private let cornerRadiusInsets = (
     opened: (top: CGFloat(19), bottom: CGFloat(24)),
-    closed: (top: CGFloat(5), bottom: CGFloat(11))
+    closed: (top: CGFloat(4), bottom: CGFloat(10))
 )
 
 struct NotchView: View {
@@ -62,7 +62,7 @@ struct NotchView: View {
     // MARK: - Sizing
 
     private var closedNotchHeight: CGFloat {
-        22
+        20
     }
 
     private var closedMaximumWidth: CGFloat {
@@ -263,30 +263,19 @@ struct NotchView: View {
             HStack(spacing: 0) {
                 if showClosedActivity {
                     HStack(spacing: 4) {
-                        ClaudeCrabIcon(size: 14, animateLegs: isProcessing)
+                        NotchDragonIcon(size: 14, animate: isProcessing)
                             .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
-
-                        if hasPendingPermission {
-                            PermissionIndicatorIcon(size: 14, color: Color(red: 0.85, green: 0.47, blue: 0.34))
-                                .matchedGeometryEffect(id: "status-indicator", in: activityNamespace, isSource: showClosedActivity)
-                        }
                     }
-                    .frame(width: 20 + (hasPendingPermission ? 18 : 0))
-                    .padding(.leading, 8)
+                    .frame(width: 22)
+                    .padding(.leading, 7)
                 }
 
                 openedHeaderContent
 
                 if showClosedActivity {
-                    if isProcessing || hasPendingPermission {
-                        ProcessingSpinner()
-                            .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
-                            .frame(width: 20)
-                    } else if hasWaitingForInput {
-                        ReadyForInputIndicatorIcon(size: 14, color: TerminalColors.green)
-                            .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
-                            .frame(width: 20)
-                    }
+                    NotchFireStatusIcon(size: 14, color: headerStatusColor, animate: headerStatusShouldAnimate)
+                        .matchedGeometryEffect(id: "spinner", in: activityNamespace, isSource: showClosedActivity)
+                        .frame(width: 20)
                 }
             }
             .frame(height: closedNotchSize.height)
@@ -298,13 +287,8 @@ struct NotchView: View {
     private var closedHeaderContent: some View {
         HStack(spacing: 7) {
             HStack(spacing: 4) {
-                ClaudeCrabIcon(size: 12, animateLegs: isProcessing)
+                NotchDragonIcon(size: 12, animate: headerStatusShouldAnimate)
                     .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: showClosedActivity)
-
-                if hasPendingPermission {
-                    PermissionIndicatorIcon(size: 11, color: Color(red: 0.85, green: 0.47, blue: 0.34))
-                        .matchedGeometryEffect(id: "status-indicator", in: activityNamespace, isSource: showClosedActivity)
-                }
             }
             .fixedSize()
 
@@ -327,7 +311,7 @@ struct NotchView: View {
 
             closedStatusIndicator
         }
-        .padding(.horizontal, closedSummaryText == nil ? 10 : 12)
+        .padding(.horizontal, closedSummaryText == nil ? 9 : 11)
         .frame(height: closedNotchHeight)
         .fixedSize(horizontal: true, vertical: false)
         .frame(maxWidth: closedMaximumWidth)
@@ -338,11 +322,11 @@ struct NotchView: View {
 
         if hasPendingPermission, let tool = session.pendingToolName {
             let toolLabel = MCPToolFormatter.formatToolName(tool)
-            return "Approve: \(compactClosedText(toolLabel, limit: 16))"
+            return "\(NSLocalizedString("Approve", comment: "")): \(compactClosedText(toolLabel, limit: 16))"
         }
 
         if session.phase == .compacting {
-            return "Compact: \(compactClosedText(session.displayTitle, limit: 18))"
+            return "\(NSLocalizedString("Compact", comment: "")): \(compactClosedText(session.displayTitle, limit: 18))"
         }
 
         if session.phase == .processing || isAnyProcessing {
@@ -352,15 +336,15 @@ struct NotchView: View {
                 return "\(toolLabel): \(detail)"
             }
 
-            return "Run: \(compactClosedText(session.displayTitle, limit: 18))"
+            return "\(NSLocalizedString("Run", comment: "")): \(compactClosedText(session.displayTitle, limit: 18))"
         }
 
         if session.phase == .waitingForInput || hasWaitingForInput {
-            return "Read: \(compactClosedText(session.displayTitle, limit: 18))"
+            return "\(NSLocalizedString("Read", comment: "")): \(compactClosedText(session.displayTitle, limit: 18))"
         }
 
         if updateManager.hasUnseenUpdate {
-            return "Update available"
+            return NSLocalizedString("Update available", comment: "")
         }
 
         return compactClosedText(session.displayTitle, limit: 16)
@@ -406,11 +390,9 @@ struct NotchView: View {
 
     @ViewBuilder
     private var closedStatusIndicator: some View {
-        Circle()
-            .fill(closedStatusColor)
-            .frame(width: 6, height: 6)
-            .scaleEffect(closedStatusShouldPulse && isClosedStatusPulsing ? 1.0 : 0.72)
-            .opacity(closedStatusShouldPulse ? (isClosedStatusPulsing ? 1.0 : 0.42) : 0.82)
+        NotchFireStatusIcon(size: 11, color: closedStatusColor, animate: closedStatusShouldPulse)
+            .scaleEffect(closedStatusShouldPulse && isClosedStatusPulsing ? 1.0 : 0.94)
+            .opacity(closedStatusShouldPulse ? (isClosedStatusPulsing ? 1.0 : 0.86) : 0.82)
             .animation(
                 closedStatusShouldPulse
                     ? .easeInOut(duration: 0.85).repeatForever(autoreverses: true)
@@ -450,12 +432,39 @@ struct NotchView: View {
 
     private var closedStatusAccessibilityLabel: String {
         if hasPendingPermission {
-            return "Waiting for approval"
+            return NSLocalizedString("Waiting for approval", comment: "")
         }
         if let session = summarizedSession {
             return SessionPhaseHelpers.phaseDescription(for: session.phase)
         }
-        return updateManager.hasUnseenUpdate ? "Update available" : "Idle"
+        return updateManager.hasUnseenUpdate
+            ? NSLocalizedString("Update available", comment: "")
+            : NSLocalizedString("Idle", comment: "")
+    }
+
+    private var headerStatusColor: Color {
+        if hasPendingPermission {
+            return TerminalColors.amber
+        }
+        if let session = summarizedSession {
+            switch session.phase {
+            case .waitingForApproval:
+                return TerminalColors.amber
+            case .waitingForInput:
+                return TerminalColors.green
+            case .processing:
+                return TerminalColors.cyan
+            case .compacting:
+                return TerminalColors.magenta
+            case .idle, .ended:
+                return updateManager.hasUnseenUpdate ? TerminalColors.blue : TerminalColors.dim
+            }
+        }
+        return updateManager.hasUnseenUpdate ? TerminalColors.blue : TerminalColors.dim
+    }
+
+    private var headerStatusShouldAnimate: Bool {
+        hasPendingPermission || isAnyProcessing || hasWaitingForInput || updateManager.hasUnseenUpdate
     }
 
     private func compactClosedText(_ text: String, limit: Int = 26) -> String {
@@ -479,7 +488,7 @@ struct NotchView: View {
             // Show static crab only if not showing activity in headerRow
             // (headerRow handles crab + indicator when showClosedActivity is true)
             if !showClosedActivity {
-                ClaudeCrabIcon(size: 14)
+                NotchDragonIcon(size: 14, animate: false)
                     .matchedGeometryEffect(id: "crab", in: activityNamespace, isSource: !showClosedActivity)
                     .padding(.leading, 8)
             }

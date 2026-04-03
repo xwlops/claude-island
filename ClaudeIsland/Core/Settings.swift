@@ -29,6 +29,10 @@ enum NotificationSound: String, CaseIterable {
     var soundName: String? {
         self == .none ? nil : rawValue
     }
+
+    var displayName: String {
+        NSLocalizedString(rawValue, comment: "")
+    }
 }
 
 enum AppLanguage: String, CaseIterable {

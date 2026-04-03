@@ -7,13 +7,22 @@
 "Extracting..." = "解压中...";
 "Install & Relaunch" = "安装并重启";
 "Installing..." = "安装中...";
+"Download Update" = "下载更新";
 "Update failed" = "更新失败";
 "Up to date" = "已是最新版本";
 "Retry" = "重试";
+"v%@" = "v%@";
+"Approve" = "审批";
+"Compact" = "压缩";
+"Run" = "运行";
+"Read" = "查看";
+"Update available" = "有可用更新";
+"Waiting for approval" = "等待审批";
+"Idle" = "空闲";
 
 // MARK: - Settings Labels
 "Launch at Login" = "登录时启动";
-"Claude Hooks" = "Claude Hooks";
+"Claude Hooks" = "Claude Hooks 集成";
 "Accessibility" = "辅助功能";
 "On" = "已开启";
 "Off" = "已关闭";
@@ -36,8 +45,25 @@
 // MARK: - Language Settings
 "Language" = "语言";
 "Chinese" = "中文";
-"English" = "English";
+"English" = "英文";
 "System" = "跟随系统";
+
+// MARK: - Notification Sound Names
+"None" = "无";
+"Pop" = "轻弹";
+"Ping" = "提示";
+"Tink" = "叮";
+"Glass" = "玻璃";
+"Blow" = "吹响";
+"Bottle" = "瓶音";
+"Frog" = "青蛙";
+"Funk" = "放克";
+"Hero" = "英雄";
+"Morse" = "摩斯";
+"Purr" = "呼噜";
+"Sosumi" = "Sosumi";
+"Submarine" = "潜艇";
+"Basso" = "低音";
 
 // MARK: - Screen Picker
 "Screen" = "显示器";

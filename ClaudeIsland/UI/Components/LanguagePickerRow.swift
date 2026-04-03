@@ -26,7 +26,7 @@ struct LanguagePickerRow: View {
                         .foregroundColor(textColor)
                         .frame(width: 16)
 
-                    Text("Language")
+                    Text(NSLocalizedString("Language", comment: ""))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(textColor)
 
