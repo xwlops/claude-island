@@ -1,0 +1,7 @@
+{
+  "tool_name": "WebFetch",
+  "tool_input_preview": "{\"url\":\"https://github.com/dylan-coop/opencode\",\"prompt\":\"Find information about how OpenCode generates session IDs and what database format it uses\"}",
+  "error": "Request failed with status code 404",
+  "timestamp": "2026-04-03T09:59:41.664Z",
+  "retry_count": 1
+}

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dino Preview</title>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-strong: rgba(255, 255, 255, 0.09);
+      --text: #f4efe6;
+      --muted: rgba(244, 239, 230, 0.64);
+      --line: rgba(255, 255, 255, 0.1);
+      --accent: #aeb3bb;
+      --accent-deep: #5a6069;
+      --notch: #050607;
+      --cyan: #11d8ef;
+      --cyan-deep: #067689;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "SF Mono", "IBM Plex Mono", "Cascadia Code", monospace;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(174, 179, 187, 0.12), transparent 32%),
+        radial-gradient(circle at top right, rgba(174, 179, 187, 0.08), transparent 24%),
+        linear-gradient(180deg, #10141b, #0a0d12 55%, #090b10);
+      padding: 32px;
+    }
+
+    .shell {
+      max-width: 1260px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+
+    .hero,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    .hero {
+      padding: 28px;
+      display: grid;
+      gap: 12px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+
+    .sub {
+      color: var(--muted);
+      max-width: 880px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .tag-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .card {
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025));
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+      min-height: 255px;
+    }
+
+    .card h3 {
+      font-size: 15px;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .sprite-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 130px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: auto, 20px 20px, 20px 20px;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas.sprite {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+    }
+
+    .notch-stage {
+      display: grid;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .notch {
+      min-height: 86px;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 26%),
+        linear-gradient(180deg, #101213, #050607 55%, #030405);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      gap: 14px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .notch::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(174, 179, 187, 0.05), transparent 18%),
+        radial-gradient(circle at 80% 50%, rgba(174, 179, 187, 0.05), transparent 18%);
+      pointer-events: none;
+    }
+
+    .window-chip {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, #f8e9d1, #e1d2bb);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7);
+      flex: 0 0 auto;
+    }
+
+    .notch-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 270px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #d9dde3;
+      box-shadow: 0 0 10px rgba(217, 221, 227, 0.55);
+      margin-left: auto;
+      flex: 0 0 auto;
+    }
+
+    .states {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .state-card {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+    }
+
+    .state-card span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .summary-item {
+      border-left: 3px solid rgba(174, 179, 187, 0.9);
+      padding-left: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .summary-item strong {
+      color: var(--text);
+    }
+
+    @media (max-width: 1000px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 18px;
+      }
+
+      .compare,
+      .states {
+        grid-template-columns: 1fr;
+      }
+
+      .notch-title {
+        max-width: 160px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <h1>恐龙替换效果预览</h1>
+      <p class="sub">
+        这是一个纯 HTML 效果稿，用来判断“直接往 Chrome 小恐龙那个方向靠，并把像素细节做扎实”是否成立。
+        左边是你项目现在的版本，右边是按你这张参考图重绘的精细版，重点是头部前探、背部折线、尾巴、短手和脚掌都更接近经典 T-Rex。
+      </p>
+      <div class="tag-row">
+        <div class="tag">目标方向：Chrome 小恐龙精细版</div>
+        <div class="tag">显示场景：深色 notch 顶栏</div>
+        <div class="tag">重点验证：轮廓、识别度、缩小后观感</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>形态对比</h2>
+        <div class="compare">
+          <article class="card">
+            <h3>当前项目恐龙</h3>
+            <p class="meta">单色青色点阵，头太小、胸腹不对、尾巴短、腿也碎。缩到小尺寸后恐龙识别度不够。</p>
+            <div class="sprite-wrap">
+              <canvas id="current-large" class="sprite" width="144" height="160"></canvas>
+            </div>
+          </article>
+          <article class="card">
+            <h3>拟替换的精细版本</h3>
+            <p class="meta">按 Chrome 小恐龙的语言重画：大头前探、短手、胸腹前压、粗尾巴上翘、双脚更稳。像素细节明显更完整。</p>
+            <div class="sprite-wrap">
+              <canvas id="proposal-large" class="sprite" width="160" height="160"></canvas>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>判断结论</h2>
+        <div class="summary-list">
+          <div class="summary-item"><strong>识别度终于对了。</strong> 这版一眼就是经典像素 T-Rex，不再是抽象的青色站立生物。</div>
+          <div class="summary-item"><strong>细节也够用。</strong> 头、嘴、牙、手、尾巴和腿都能在小图标里保留，不是只靠大轮廓撑着。</div>
+          <div class="summary-item"><strong>落地仍然简单。</strong> 依旧可以用当前 Swift 点阵方式实现，不必引入图片资源或复杂动画管线。</div>
+          <div class="summary-item"><strong>如果你认可这个方向，下一步我可以把项目里的 Swift 点阵直接替换掉。</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel">
+      <h2>放进 Notch 里的观感</h2>
+      <div class="notch-stage">
+        <div class="notch">
+          <div class="window-chip"></div>
+          <canvas id="notch-current" class="sprite" width="30" height="30"></canvas>
+          <div class="notch-title">Grep: session...</div>
+          <div class="status-dot"></div>
+        </div>
+        <div class="notch">
+          <div class="window-chip"></div>
+          <canvas id="notch-proposal" class="sprite" width="34" height="30"></canvas>
+          <div class="notch-title">Grep: session...</div>
+          <div class="status-dot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>状态预览</h2>
+      <div class="states">
+        <div class="state-card">
+          <canvas id="state-idle" class="sprite" width="96" height="96"></canvas>
+          <span>Idle</span>
+        </div>
+        <div class="state-card">
+          <canvas id="state-run" class="sprite" width="96" height="96"></canvas>
+          <span>Run</span>
+        </div>
+        <div class="state-card">
+          <canvas id="state-jump" class="sprite" width="96" height="96"></canvas>
+          <span>Jump</span>
+        </div>
+        <div class="state-card">
+          <canvas id="state-duck" class="sprite" width="96" height="96"></canvas>
+          <span>Duck</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const palette = {
+      ".": null,
+      "#": "#6b7078",
+      "o": "#f4f6f8",
+      "x": "#f4f6f8",
+      "K": "#1c1f24",
+      "D": "#50545c",
+      "L": "#6b7078",
+      "T": "#f4f6f8",
+      "H": "#cfd5dc"
+    };
+
+    const currentSprite = [
+      "..................",
+      "..........####....",
+      ".........######...",
+      ".........##o####..",
+      ".........#######..",
+      ".........#######..",
+      "........########..",
+      ".......########...",
+      ".....##########...",
+      "...############...",
+      "..############....",
+      "..##########......",
+      "...########.......",
+      "....#######.......",
+      ".....######.......",
+      "......#####.......",
+      ".....##.###.......",
+      "....##...##.......",
+      "....##....##......",
+      ".................."
+    ];
+
+    const roundedIdle = [
+      "........................",
+      "...............#####....",
+      "..............#######...",
+      "..............########..",
+      "..............########..",
+      "..............###oo###..",
+      "..............########..",
+      "..............#######...",
+      "............########....",
+      "..........##########....",
+      "........############....",
+      "......##############....",
+      ".....###############....",
+      "....################....",
+      "....################....",
+      "...################.....",
+      "..################......",
+      "#######..########.......",
+      ".#####....######........",
+      "..###.....#####.........",
+      "...........##.##........",
+      "..........##..##........",
+      "..........##..##........",
+      "........................"
+    ];
+
+    const roundedRun = [
+      "........................",
+      "...............#####....",
+      "..............#######...",
+      "..............########..",
+      "..............########..",
+      "..............###oo###..",
+      "..............########..",
+      "..............#######...",
+      "............########....",
+      "..........##########....",
+      "........############....",
+      "......##############....",
+      ".....###############....",
+      "....################....",
+      "....################....",
+      "...################.....",
+      "..################......",
+      "#######..########.......",
+      ".#####....#######.......",
+      "..###.....###.###.......",
+      ".............##.##......",
+      "............##..###.....",
+      "...........##....##.....",
+      "........................"
+    ];
+
+    const roundedJump = [
+      "........................",
+      "...............#####....",
+      "..............#######...",
+      "..............########..",
+      "..............########..",
+      "..............###oo###..",
+      "..............########..",
+      "..............#######...",
+      "............########....",
+      "..........##########....",
+      "........############....",
+      "......##############....",
+      ".....###############....",
+      "....################....",
+      "....################....",
+      "...################.....",
+      "..################......",
+      "#######..########.......",
+      ".#####....######........",
+      "..###.....#####.........",
+      ".............###........",
+      "............##.##.......",
+      "...........##...##......",
+      "........................"
+    ];
+
+    const roundedDuck = [
+      "........................",
+      "........................",
+      "..............######....",
+      "...........##########...",
+      ".........############...",
+      ".......##############...",
+      "......###############...",
+      ".....################...",
+      "....################....",
+      "...################.....",
+      "..################......",
+      "#######.########........",
+      ".#####...######.........",
+      "..###....#####..........",
+      ".........####...........",
+      "........##.###..........",
+      ".......##...##..........",
+      ".......##...##..........",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................",
+      "........................"
+    ];
+
+    function renderSprite(canvasId, sprite, pixelSize, yOffset = 0) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const width = sprite[0].length;
+      const height = sprite.length;
+      const drawWidth = width * pixelSize;
+      const drawHeight = height * pixelSize;
+      const x = Math.floor((canvas.width - drawWidth) / 2);
+      const y = Math.floor((canvas.height - drawHeight) / 2 + yOffset);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+
+      sprite.forEach((row, rowIndex) => {
+        [...row].forEach((cell, colIndex) => {
+          const color = palette[cell];
+          if (!color) return;
+          ctx.fillStyle = color;
+          ctx.fillRect(x + colIndex * pixelSize, y + rowIndex * pixelSize, pixelSize, pixelSize);
+        });
+      });
+    }
+
+    renderSprite("current-large", currentSprite, 7, 2);
+    renderSprite("proposal-large", roundedIdle, 5, 0);
+    renderSprite("notch-current", currentSprite, 1.35, 0);
+    renderSprite("notch-proposal", roundedIdle, 0.92, 0);
+    renderSprite("state-idle", roundedIdle, 3.2, 0);
+    renderSprite("state-run", roundedRun, 3.2, 0);
+    renderSprite("state-jump", roundedJump, 3.2, 0);
+    renderSprite("state-duck", roundedDuck, 3.2, 0);
+  </script>
+</body>
+</html>

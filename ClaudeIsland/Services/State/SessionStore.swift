@@ -123,6 +123,11 @@ actor SessionStore {
         let isNewSession = sessions[sessionId] == nil
         var session = sessions[sessionId] ?? createSession(from: event)
 
+        // Log if we're modifying an existing OpenCode session
+        if !isNewSession && session.provider == .opencode {
+            Self.logger.warning("⚠️ Claude hook event for existing OpenCode session \(sessionId.prefix(8))")
+        }
+
         // Track new session in Mixpanel
         if isNewSession {
             Mixpanel.mainInstance().track(event: "Session Started")
@@ -199,6 +204,7 @@ actor SessionStore {
         for var session in newSessions {
             // Ensure provider is correctly set (fix for sessions created before provider fix)
             if session.provider != provider {
+                Self.logger.info("Correcting provider for session \(session.sessionId.prefix(8)): was \(session.provider.rawValue), setting to \(provider.rawValue)")
                 session = SessionState(
                     sessionId: session.sessionId,
                     provider: provider,
@@ -216,9 +222,13 @@ actor SessionStore {
                     lastActivity: session.lastActivity,
                     createdAt: session.createdAt
                 )
+            } else {
+                Self.logger.debug("Session \(session.sessionId.prefix(8)) provider correct: \(provider.rawValue)")
             }
             sessions[session.sessionId] = session
         }
+
+        Self.logger.info("Provider sessions updated: \(provider.rawValue) count=\(newSessions.count), total sessions=\(sessions.count)")
     }
 
     private func processToolTracking(event: HookEvent, session: inout SessionState) {

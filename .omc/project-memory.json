@@ -95,15 +95,39 @@
   },
   "hotPaths": [
     {
+      "path": "ClaudeIsland",
+      "accessCount": 35,
+      "lastAccessed": 1775212282374,
+      "type": "directory"
+    },
+    {
       "path": "ClaudeIsland/UI/Views/ChatView.swift",
-      "accessCount": 16,
-      "lastAccessed": 1775196946991,
+      "accessCount": 25,
+      "lastAccessed": 1775210521880,
       "type": "file"
     },
     {
       "path": "ClaudeIsland/UI/Views/ClaudeInstancesView.swift",
-      "accessCount": 10,
-      "lastAccessed": 1775197165213,
+      "accessCount": 22,
+      "lastAccessed": 1775210572280,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Services/Session/OpenCodeMonitor.swift",
+      "accessCount": 16,
+      "lastAccessed": 1775212282312,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Services/State/SessionStore.swift",
+      "accessCount": 14,
+      "lastAccessed": 1775212338193,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Views/NotchView.swift",
+      "accessCount": 7,
+      "lastAccessed": 1775210356994,
       "type": "file"
     },
     {
@@ -131,9 +155,33 @@
       "type": "file"
     },
     {
-      "path": "ClaudeIsland/UI/Views/NotchView.swift",
+      "path": "ClaudeIsland/Models/SessionProvider.swift",
       "accessCount": 5,
-      "lastAccessed": 1775198713137,
+      "lastAccessed": 1775210396039,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 5,
+      "lastAccessed": 1775210515298,
+      "type": "directory"
+    },
+    {
+      "path": "ClaudeIsland/Services/Session/ClaudeSessionMonitor.swift",
+      "accessCount": 5,
+      "lastAccessed": 1775210632832,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Models/SessionState.swift",
+      "accessCount": 5,
+      "lastAccessed": 1775212287562,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Services/Chat/ChatHistoryManager.swift",
+      "accessCount": 4,
+      "lastAccessed": 1775210367143,
       "type": "file"
     },
     {
@@ -161,12 +209,6 @@
       "type": "directory"
     },
     {
-      "path": "ClaudeIsland",
-      "accessCount": 2,
-      "lastAccessed": 1775198751401,
-      "type": "directory"
-    },
-    {
       "path": "ClaudeIsland/UI/Components/LanguagePickerRow.swift",
       "accessCount": 1,
       "lastAccessed": 1775196240995,
@@ -177,12 +219,6 @@
       "accessCount": 1,
       "lastAccessed": 1775198799299,
       "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 1,
-      "lastAccessed": 1775198853150,
-      "type": "directory"
     },
     {
       "path": "dragon-preview.html",
@@ -201,6 +237,18 @@
       "accessCount": 1,
       "lastAccessed": 1775200261347,
       "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Services/Session/ConversationParser.swift",
+      "accessCount": 1,
+      "lastAccessed": 1775210249646,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Services/Chat",
+      "accessCount": 1,
+      "lastAccessed": 1775210363308,
+      "type": "directory"
     }
   ],
   "userDirectives": []
