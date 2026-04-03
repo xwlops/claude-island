@@ -322,32 +322,27 @@ struct NotchView: View {
 
         if hasPendingPermission, let tool = session.pendingToolName {
             let toolLabel = MCPToolFormatter.formatToolName(tool)
-            return "\(NSLocalizedString("Approve", comment: "")): \(compactClosedText(toolLabel, limit: 16))"
+            let detail = compactClosedText(session.pendingToolInput ?? sessionHeadline(session), limit: 18)
+            return "\(toolLabel) · \(detail)"
         }
 
-        if session.phase == .compacting {
-            return "\(NSLocalizedString("Compact", comment: "")): \(compactClosedText(session.displayTitle, limit: 18))"
+        if let lastTool = session.lastToolName,
+           session.phase == .processing || session.phase == .compacting,
+           let lastMessage = session.lastMessage,
+           !lastMessage.isEmpty {
+            let toolLabel = MCPToolFormatter.formatToolName(lastTool)
+            return "\(toolLabel) · \(compactClosedText(lastMessage, limit: 18))"
         }
 
-        if session.phase == .processing || isAnyProcessing {
-            if let tool = session.lastToolName {
-                let toolLabel = MCPToolFormatter.formatToolName(tool)
-                let detail = compactClosedText(session.lastMessage ?? session.displayTitle, limit: 18)
-                return "\(toolLabel): \(detail)"
-            }
-
-            return "\(NSLocalizedString("Run", comment: "")): \(compactClosedText(session.displayTitle, limit: 18))"
+        if let preview = session.lastMessage, !preview.isEmpty {
+            return compactClosedText(preview, limit: 24)
         }
 
-        if session.phase == .waitingForInput || hasWaitingForInput {
-            return "\(NSLocalizedString("Read", comment: "")): \(compactClosedText(session.displayTitle, limit: 18))"
-        }
-
-        if updateManager.hasUnseenUpdate {
+        if updateManager.hasUnseenUpdate, sessionMonitor.instances.isEmpty {
             return NSLocalizedString("Update available", comment: "")
         }
 
-        return compactClosedText(session.displayTitle, limit: 16)
+        return compactClosedText(sessionHeadline(session), limit: 24)
     }
 
     private var summarizedSession: SessionState? {
@@ -501,6 +496,14 @@ struct NotchView: View {
         }
 
         return String(singleLine.prefix(limit)) + "…"
+    }
+
+    private func sessionHeadline(_ session: SessionState) -> String {
+        let prompt = session.firstUserMessage ?? session.displayTitle
+        if prompt == session.projectName {
+            return prompt
+        }
+        return "\(session.projectName) · \(prompt)"
     }
 
     // MARK: - Opened Header Content
