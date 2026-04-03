@@ -98,3 +98,17 @@ jobs:
         with:
           files: dist/*.dmg
           generate_release_notes: true
+
+      - name: Publish DMG to Nightly Release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: Nightly
+          body: |
+            Automated nightly build from `${{ github.ref_name }}`.
+
+            Commit: `${{ github.sha }}`
+          files: dist/*.dmg
+          prerelease: true
+          make_latest: false

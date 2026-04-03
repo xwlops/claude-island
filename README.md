@@ -35,7 +35,7 @@ Download the latest release or build from source:
 xcodebuild -scheme ClaudeIsland -configuration Release build
 ```
 
-Tagged pushes such as `v1.2.0` also build a DMG in GitHub Actions and upload it to GitHub Releases.
+Pushes to `main` or `master` automatically build a DMG and update the `nightly` GitHub Release. Tagged pushes such as `v1.2.0` build a DMG and publish a versioned GitHub Release.
 
 ## How It Works
 
