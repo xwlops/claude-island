@@ -1,0 +1,207 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775195825124,
+  "projectRoot": "/Users/wenlong/data/Github/xwlops/claude-island",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "scripts"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "ClaudeIsland": {
+      "path": "ClaudeIsland",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775195825118,
+      "keyFiles": [
+        "Info.plist"
+      ]
+    },
+    "ClaudeIsland.xcodeproj": {
+      "path": "ClaudeIsland.xcodeproj",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775195825122,
+      "keyFiles": [
+        "project.pbxproj"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 3,
+      "lastAccessed": 1775195825122,
+      "keyFiles": [
+        "build.sh",
+        "create-release.sh",
+        "generate-keys.sh"
+      ]
+    },
+    "ClaudeIsland/App": {
+      "path": "ClaudeIsland/App",
+      "purpose": "Application code",
+      "fileCount": 4,
+      "lastAccessed": 1775195825123,
+      "keyFiles": [
+        "AppDelegate.swift",
+        "ClaudeIslandApp.swift",
+        "ScreenObserver.swift"
+      ]
+    },
+    "ClaudeIsland/Models": {
+      "path": "ClaudeIsland/Models",
+      "purpose": "Data models",
+      "fileCount": 7,
+      "lastAccessed": 1775195825123,
+      "keyFiles": [
+        "ChatMessage.swift",
+        "SessionEvent.swift",
+        "SessionPhase.swift"
+      ]
+    },
+    "ClaudeIsland/Services": {
+      "path": "ClaudeIsland/Services",
+      "purpose": "Business logic services",
+      "fileCount": 0,
+      "lastAccessed": 1775195825124,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "ClaudeIsland/UI/Views/ChatView.swift",
+      "accessCount": 16,
+      "lastAccessed": 1775196946991,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Views/ClaudeInstancesView.swift",
+      "accessCount": 10,
+      "lastAccessed": 1775197165213,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Views/NotchMenuView.swift",
+      "accessCount": 6,
+      "lastAccessed": 1775196342901,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Components/ScreenPickerRow.swift",
+      "accessCount": 5,
+      "lastAccessed": 1775196457959,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Resources/en.lproj/Localizable.strings",
+      "accessCount": 5,
+      "lastAccessed": 1775197055986,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Resources/zh-Hans.lproj/Localizable.strings",
+      "accessCount": 5,
+      "lastAccessed": 1775197092813,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Views/NotchView.swift",
+      "accessCount": 5,
+      "lastAccessed": 1775198713137,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/Core/Settings.swift",
+      "accessCount": 3,
+      "lastAccessed": 1775196000212,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Components/SoundPickerRow.swift",
+      "accessCount": 2,
+      "lastAccessed": 1775196369651,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland.xcodeproj/project.pbxproj",
+      "accessCount": 2,
+      "lastAccessed": 1775197305522,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Views",
+      "accessCount": 2,
+      "lastAccessed": 1775198543672,
+      "type": "directory"
+    },
+    {
+      "path": "ClaudeIsland",
+      "accessCount": 2,
+      "lastAccessed": 1775198751401,
+      "type": "directory"
+    },
+    {
+      "path": "ClaudeIsland/UI/Components/LanguagePickerRow.swift",
+      "accessCount": 1,
+      "lastAccessed": 1775196240995,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/UI/Views/NotchHeaderView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1775198799299,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 1,
+      "lastAccessed": 1775198853150,
+      "type": "directory"
+    },
+    {
+      "path": "dragon-preview.html",
+      "accessCount": 1,
+      "lastAccessed": 1775199692590,
+      "type": "file"
+    },
+    {
+      "path": "ClaudeIsland/App/ClaudeIslandApp.swift",
+      "accessCount": 1,
+      "lastAccessed": 1775200261289,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775200261347,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
