@@ -74,7 +74,7 @@ class NotchViewModel: ObservableObject {
             // Compact size for settings menu
             return CGSize(
                 width: min(screenRect.width * 0.4, 480),
-                height: 420 + screenSelector.expandedPickerHeight + soundSelector.expandedPickerHeight
+                height: 640 + screenSelector.expandedPickerHeight + soundSelector.expandedPickerHeight
             )
         case .instances:
             return CGSize(
@@ -156,6 +156,10 @@ class NotchViewModel: ObservableObject {
         guard newHovering != isHovering else { return }
 
         isHovering = newHovering
+
+        if status == .opened && !newHovering && AppSettings.collapseOnMouseLeave {
+            notchClose()
+        }
 
         // Cancel any pending hover timer
         hoverTimer?.cancel()

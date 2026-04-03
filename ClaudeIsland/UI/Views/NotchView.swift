@@ -26,6 +26,9 @@ struct NotchView: View {
     @State private var isVisible: Bool = false
     @State private var isHovering: Bool = false
     @State private var isBouncing: Bool = false
+    @State private var isBehaviorHidden: Bool = false
+
+    private let visibilityTimer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 
     @Namespace private var activityNamespace
 
@@ -57,9 +60,11 @@ struct NotchView: View {
     // MARK: - Sizing
 
     private var closedNotchSize: CGSize {
+        let widthScale: CGFloat = 0.84
+        let heightScale: CGFloat = 0.9
         CGSize(
-            width: viewModel.deviceNotchRect.width,
-            height: viewModel.deviceNotchRect.height
+            width: max(152, viewModel.deviceNotchRect.width * widthScale),
+            height: max(28, viewModel.deviceNotchRect.height * heightScale)
         )
     }
 
@@ -185,7 +190,8 @@ struct NotchView: View {
                     }
             }
         }
-        .opacity(isVisible ? 1 : 0)
+        .opacity(isVisible && !isBehaviorHidden ? 1 : 0)
+        .allowsHitTesting(isVisible && !isBehaviorHidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .preferredColorScheme(.dark)
         .onAppear {
@@ -194,6 +200,10 @@ struct NotchView: View {
             if !viewModel.hasPhysicalNotch {
                 isVisible = true
             }
+            refreshBehaviorVisibility()
+        }
+        .onReceive(visibilityTimer) { _ in
+            refreshBehaviorVisibility()
         }
         .onChange(of: viewModel.status) { oldStatus, newStatus in
             handleStatusChange(from: oldStatus, to: newStatus)
@@ -405,8 +415,11 @@ struct NotchView: View {
                 waitingForInputTimestamps.removeAll()
             }
         case .closed:
-            // Don't hide on non-notched devices - users need a visible target
-            guard viewModel.hasPhysicalNotch else { return }
+            if !AppSettings.autoHideNoActiveSessions {
+                return
+            }
+            // Don't hide on non-notched devices unless behavior toggle allows it
+            guard viewModel.hasPhysicalNotch || sessionMonitor.instances.isEmpty else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                 if viewModel.status == .closed && !isAnyProcessing && !hasPendingPermission && !hasWaitingForInput && !activityCoordinator.expandingActivity.show {
                     isVisible = false
@@ -419,10 +432,16 @@ struct NotchView: View {
         let currentIds = Set(sessions.map { $0.stableId })
         let newPendingIds = currentIds.subtracting(previousPendingIds)
 
-        if !newPendingIds.isEmpty &&
-           viewModel.status == .closed &&
-           !TerminalVisibilityDetector.isTerminalVisibleOnCurrentSpace() {
-            viewModel.notchOpen(reason: .notification)
+        let newPendingSessions = sessions.filter { newPendingIds.contains($0.stableId) }
+        if !newPendingSessions.isEmpty && viewModel.status == .closed {
+            Task {
+                let shouldSuppress = await shouldSuppressAutoOpen(for: newPendingSessions)
+                await MainActor.run {
+                    if !shouldSuppress && !TerminalVisibilityDetector.isTerminalVisibleOnCurrentSpace() {
+                        viewModel.notchOpen(reason: .notification)
+                    }
+                }
+            }
         }
 
         previousPendingIds = currentIds
@@ -494,6 +513,35 @@ struct NotchView: View {
 
             let isFocused = await TerminalVisibilityDetector.isSessionFocused(sessionPid: pid)
             if !isFocused {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private func refreshBehaviorVisibility() {
+        let shouldHideForFullscreen =
+            AppSettings.hideInFullscreen &&
+            DisplayModeDetector.isFrontmostAppFullscreen(on: NSScreen.main)
+
+        let shouldHideForIdle =
+            AppSettings.autoHideNoActiveSessions &&
+            viewModel.status == .closed &&
+            sessionMonitor.instances.isEmpty &&
+            !isAnyProcessing &&
+            !hasPendingPermission &&
+            !hasWaitingForInput
+
+        isBehaviorHidden = shouldHideForFullscreen || shouldHideForIdle
+    }
+
+    private func shouldSuppressAutoOpen(for sessions: [SessionState]) async -> Bool {
+        guard AppSettings.smartSuppression else { return false }
+
+        for session in sessions {
+            guard let pid = session.pid else { continue }
+            if await TerminalVisibilityDetector.isSessionFocused(sessionPid: pid) {
                 return true
             }
         }

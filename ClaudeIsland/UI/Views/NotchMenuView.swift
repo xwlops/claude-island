@@ -20,6 +20,11 @@ struct NotchMenuView: View {
     @ObservedObject private var soundSelector = SoundSelector.shared
     @State private var hooksInstalled: Bool = false
     @State private var launchAtLogin: Bool = false
+    @State private var hideInFullscreen: Bool = false
+    @State private var autoHideNoActiveSessions: Bool = false
+    @State private var smartSuppression: Bool = false
+    @State private var collapseOnMouseLeave: Bool = false
+    @State private var showUsageSummary: Bool = false
 
     var body: some View {
         VStack(spacing: 4) {
@@ -82,6 +87,18 @@ struct NotchMenuView: View {
                 .background(Color.white.opacity(0.08))
                 .padding(.vertical, 4)
 
+            BehaviorSection(
+                hideInFullscreen: $hideInFullscreen,
+                autoHideNoActiveSessions: $autoHideNoActiveSessions,
+                smartSuppression: $smartSuppression,
+                collapseOnMouseLeave: $collapseOnMouseLeave,
+                showUsageSummary: $showUsageSummary
+            )
+
+            Divider()
+                .background(Color.white.opacity(0.08))
+                .padding(.vertical, 4)
+
             // About
             UpdateRow(updateManager: updateManager)
 
@@ -122,7 +139,135 @@ struct NotchMenuView: View {
     private func refreshStates() {
         hooksInstalled = HookInstaller.isInstalled()
         launchAtLogin = SMAppService.mainApp.status == .enabled
+        hideInFullscreen = AppSettings.hideInFullscreen
+        autoHideNoActiveSessions = AppSettings.autoHideNoActiveSessions
+        smartSuppression = AppSettings.smartSuppression
+        collapseOnMouseLeave = AppSettings.collapseOnMouseLeave
+        showUsageSummary = AppSettings.showUsageSummary
         screenSelector.refreshScreens()
+    }
+}
+
+struct BehaviorSection: View {
+    @Binding var hideInFullscreen: Bool
+    @Binding var autoHideNoActiveSessions: Bool
+    @Binding var smartSuppression: Bool
+    @Binding var collapseOnMouseLeave: Bool
+    @Binding var showUsageSummary: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Behavior")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.white.opacity(0.45))
+                .padding(.horizontal, 12)
+
+            VStack(spacing: 0) {
+                BehaviorToggleRow(
+                    title: "全屏时隐藏",
+                    subtitle: nil,
+                    isOn: $hideInFullscreen
+                ) {
+                    AppSettings.hideInFullscreen = hideInFullscreen
+                }
+
+                BehaviorDivider()
+
+                BehaviorToggleRow(
+                    title: "无活跃会话时自动隐藏",
+                    subtitle: nil,
+                    isOn: $autoHideNoActiveSessions
+                ) {
+                    AppSettings.autoHideNoActiveSessions = autoHideNoActiveSessions
+                }
+
+                BehaviorDivider()
+
+                BehaviorToggleRow(
+                    title: "智能抑制",
+                    subtitle: "Agent 所在终端标签页在前台时不自动展开面板",
+                    isOn: $smartSuppression
+                ) {
+                    AppSettings.smartSuppression = smartSuppression
+                }
+
+                BehaviorDivider()
+
+                BehaviorToggleRow(
+                    title: "鼠标离开时自动收起",
+                    subtitle: nil,
+                    isOn: $collapseOnMouseLeave
+                ) {
+                    AppSettings.collapseOnMouseLeave = collapseOnMouseLeave
+                }
+
+                BehaviorDivider()
+
+                BehaviorToggleRow(
+                    title: "显示用量",
+                    subtitle: "在刘海面板顶部显示会话摘要数据",
+                    isOn: $showUsageSummary
+                ) {
+                    AppSettings.showUsageSummary = showUsageSummary
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.04))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    )
+            )
+        }
+    }
+}
+
+private struct BehaviorDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.06))
+            .frame(height: 1)
+            .padding(.leading, 12)
+    }
+}
+
+private struct BehaviorToggleRow: View {
+    let title: String
+    let subtitle: String?
+    @Binding var isOn: Bool
+    let onChange: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: subtitle == nil ? 0 : 6) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.88))
+
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.45))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer(minLength: 12)
+
+            Toggle("", isOn: Binding(
+                get: { isOn },
+                set: { newValue in
+                    isOn = newValue
+                    onChange()
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .tint(TerminalColors.blue)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
     }
 }
 

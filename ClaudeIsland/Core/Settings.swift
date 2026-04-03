@@ -38,6 +38,11 @@ enum AppSettings {
 
     private enum Keys {
         static let notificationSound = "notificationSound"
+        static let hideInFullscreen = "hideInFullscreen"
+        static let autoHideNoActiveSessions = "autoHideNoActiveSessions"
+        static let smartSuppression = "smartSuppression"
+        static let collapseOnMouseLeave = "collapseOnMouseLeave"
+        static let showUsageSummary = "showUsageSummary"
     }
 
     // MARK: - Notification Sound
@@ -54,5 +59,30 @@ enum AppSettings {
         set {
             defaults.set(newValue.rawValue, forKey: Keys.notificationSound)
         }
+    }
+
+    static var hideInFullscreen: Bool {
+        get { defaults.object(forKey: Keys.hideInFullscreen) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.hideInFullscreen) }
+    }
+
+    static var autoHideNoActiveSessions: Bool {
+        get { defaults.object(forKey: Keys.autoHideNoActiveSessions) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.autoHideNoActiveSessions) }
+    }
+
+    static var smartSuppression: Bool {
+        get { defaults.object(forKey: Keys.smartSuppression) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.smartSuppression) }
+    }
+
+    static var collapseOnMouseLeave: Bool {
+        get { defaults.object(forKey: Keys.collapseOnMouseLeave) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.collapseOnMouseLeave) }
+    }
+
+    static var showUsageSummary: Bool {
+        get { defaults.object(forKey: Keys.showUsageSummary) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.showUsageSummary) }
     }
 }

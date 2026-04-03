@@ -11,6 +11,7 @@ import SwiftUI
 struct ClaudeInstancesView: View {
     @ObservedObject var sessionMonitor: ClaudeSessionMonitor
     @ObservedObject var viewModel: NotchViewModel
+    @AppStorage("showUsageSummary") private var showUsageSummary: Bool = true
 
     var body: some View {
         if sessionMonitor.instances.isEmpty {
@@ -67,7 +68,11 @@ struct ClaudeInstancesView: View {
 
     private var instancesList: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 2) {
+            LazyVStack(spacing: 8) {
+                if showUsageSummary {
+                    usageSummary
+                }
+
                 ForEach(sortedInstances) { session in
                     InstanceRow(
                         session: session,
@@ -83,6 +88,16 @@ struct ClaudeInstancesView: View {
             .padding(.vertical, 4)
         }
         .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var usageSummary: some View {
+        HStack(spacing: 8) {
+            UsagePill(label: "Sessions", value: "\(sessionMonitor.instances.count)")
+            UsagePill(label: "Active", value: "\(sessionMonitor.instances.filter { $0.phase == .processing || $0.phase == .compacting }.count)")
+            UsagePill(label: "Attention", value: "\(sessionMonitor.instances.filter(\.needsAttention).count)")
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8)
     }
 
     // MARK: - Actions
@@ -113,6 +128,30 @@ struct ClaudeInstancesView: View {
 
     private func archiveSession(_ session: SessionState) {
         sessionMonitor.archiveSession(sessionId: session.sessionId)
+    }
+}
+
+private struct UsagePill: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(TerminalColors.green)
+                .frame(width: 5, height: 5)
+            Text(label)
+                .foregroundColor(.white.opacity(0.45))
+            Text(value)
+                .foregroundColor(.white.opacity(0.78))
+        }
+        .font(.system(size: 10, weight: .medium, design: .monospaced))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(Color.white.opacity(0.08))
+        )
     }
 }
 
