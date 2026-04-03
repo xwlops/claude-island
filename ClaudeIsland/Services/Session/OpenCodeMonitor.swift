@@ -98,7 +98,21 @@ actor OpenCodeMonitor {
             case .thinking(let text):
                 lastMessage = text
                 lastMessageRole = "assistant"
-            case .toolCall, .interrupted:
+            case .toolCall(let tool):
+                // For tool calls, update lastMessageRole to "tool" and lastToolName
+                lastMessageRole = "tool"
+                // Store tool name in a temporary variable for ConversationInfo
+                // The tool name is already in the tool object
+            case .interrupted:
+                break
+            }
+        }
+
+        // Determine lastToolName from the last toolCall item
+        var lastToolName: String?
+        for item in chatItems.reversed() {
+            if case .toolCall(let tool) = item.type {
+                lastToolName = tool.name
                 break
             }
         }
@@ -108,7 +122,7 @@ actor OpenCodeMonitor {
             summary: title,
             lastMessage: lastMessage,
             lastMessageRole: lastMessageRole,
-            lastToolName: nil,
+            lastToolName: lastToolName,
             firstUserMessage: firstUserMessage,
             lastUserMessageDate: lastUserMessageDate
         )
@@ -147,11 +161,33 @@ actor OpenCodeMonitor {
         .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         .joined(separator: "\n")
 
+        // Check for tool calls in parts
+        let toolCalls = message.parts.filter { $0.type == "tool" }
+
         switch message.payload.role {
         case "user":
             guard !content.isEmpty else { return nil }
             return ChatHistoryItem(id: message.id, type: .user(content), timestamp: timestamp)
         case "assistant":
+            // If there are tool calls, create toolCall items for them
+            // Otherwise show assistant text
+            if !toolCalls.isEmpty {
+                // Return the first tool call as a toolCall item
+                // In a real implementation, we might want to return multiple items
+                let firstTool = toolCalls.first
+                return ChatHistoryItem(
+                    id: message.id,
+                    type: .toolCall(ToolCallItem(
+                        name: firstTool?.type ?? "unknown",
+                        input: [:],
+                        status: .success,
+                        result: nil,
+                        structuredResult: nil,
+                        subagentTools: []
+                    )),
+                    timestamp: timestamp
+                )
+            }
             if !content.isEmpty {
                 return ChatHistoryItem(id: message.id, type: .assistant(content), timestamp: timestamp)
             }
