@@ -16,15 +16,231 @@ enum NotchDinoPose {
     case crashed
 }
 
+private enum ClaudeState {
+    case idle
+    case thinking
+    case alert
+    case bashful
+    case crashed
+}
+
+private struct SpringState {
+    var position: CGFloat = 0
+    var velocity: CGFloat = 0
+
+    mutating func update(target: CGFloat, stiffness: CGFloat, damping: CGFloat) {
+        let force = (target - position) * stiffness
+        velocity = (velocity + force) * damping
+        position += velocity
+    }
+}
+
+private struct NotchJellyPetV2: View {
+    let size: CGFloat
+    let state: ClaudeState
+    let gradient: Gradient
+    var animate: Bool = true
+
+    @State private var breathPhase: CGFloat = 0
+    @State private var wobble = SpringState()
+    @State private var wobbleTarget: CGFloat = 0
+    @State private var antennaeWobble = SpringState()
+    @State private var blinkProgress: CGFloat = 0
+    @State private var elapsed: TimeInterval = 0
+    @State private var nextBlink: TimeInterval = Double.random(in: 2.5...5.0)
+
+    private let ticker = Timer.publish(every: 0.016, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        Canvas { context, canvasSize in
+            let w = canvasSize.width
+            let h = canvasSize.height
+            let poseShift: CGFloat = state == .alert ? -size * 0.028 : 0
+            let squash: CGFloat = state == .bashful ? 0.92 : (state == .crashed ? 0.88 : 1.0)
+            let antennaDrop: CGFloat = state == .crashed ? size * 0.05 : 0
+            let cx = w / 2
+            let cy = h / 2 + size * 0.06 + poseShift
+
+            let breath = sin(breathPhase) * (state == .alert ? 0.018 : 0.014)
+            let wob = wobble.position
+            let antWob = antennaeWobble.position
+
+            let bodyW = w * 0.68
+            let bodyH = h * 0.60 * (1.0 + breath) * squash
+
+            let topW = bodyW * (state == .bashful ? 0.79 : 0.82)
+            let bottomW = bodyW * (state == .bashful ? 1.05 : 1.00)
+            let top = cy - bodyH * 0.50
+            let bottom = cy + bodyH * 0.50
+            let topL = cx - topW / 2 + wob
+            let topR = cx + topW / 2 + wob
+            let botL = cx - bottomW / 2 + wob * 0.6
+            let botR = cx + bottomW / 2 + wob * 0.6
+            let r: CGFloat = bodyH * 0.38
+
+            var blob = Path()
+            blob.move(to: CGPoint(x: topL + r, y: top))
+            blob.addLine(to: CGPoint(x: topR - r, y: top))
+            blob.addQuadCurve(
+                to: CGPoint(x: topR, y: top + r),
+                control: CGPoint(x: topR, y: top)
+            )
+            blob.addLine(to: CGPoint(x: botR, y: bottom - r * 0.6))
+            blob.addQuadCurve(
+                to: CGPoint(x: botR - r * 0.7, y: bottom),
+                control: CGPoint(x: botR, y: bottom)
+            )
+            blob.addLine(to: CGPoint(x: botL + r * 0.7, y: bottom))
+            blob.addQuadCurve(
+                to: CGPoint(x: botL, y: bottom - r * 0.6),
+                control: CGPoint(x: botL, y: bottom)
+            )
+            blob.addLine(to: CGPoint(x: topL, y: top + r))
+            blob.addQuadCurve(
+                to: CGPoint(x: topL + r, y: top),
+                control: CGPoint(x: topL, y: top)
+            )
+            blob.closeSubpath()
+
+            context.fill(
+                blob,
+                with: .radialGradient(
+                    gradient,
+                    center: CGPoint(x: cx - bodyW * 0.08 + wob * 0.2, y: cy - bodyH * 0.25),
+                    startRadius: 1,
+                    endRadius: bodyW * 0.85
+                )
+            )
+
+            if state != .bashful {
+                let antBase = CGPoint(x: cx + wob, y: top + 1)
+                let antTip = CGPoint(x: cx + antWob * 2.5 + wob * 0.3, y: top - size * 0.22 + antennaDrop)
+                let antBall = CGPoint(x: antTip.x, y: antTip.y - size * 0.055)
+
+                var antStalk = Path()
+                antStalk.move(to: antBase)
+                antStalk.addQuadCurve(
+                    to: antTip,
+                    control: CGPoint(x: cx + antWob * 1.2 + wob * 0.2, y: top - size * 0.10 + antennaDrop * 0.7)
+                )
+                context.stroke(
+                    antStalk,
+                    with: .color(gradient.stops.last?.color.opacity(state == .crashed ? 0.45 : 0.85) ?? .teal),
+                    style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
+                )
+
+                context.fill(
+                    Path(ellipseIn: CGRect(
+                        x: antBall.x - size * 0.045,
+                        y: antBall.y - size * 0.045,
+                        width: size * 0.09,
+                        height: size * 0.09
+                    )),
+                    with: .color(gradient.stops.last?.color.opacity(state == .crashed ? 0.72 : 1.0) ?? .teal)
+                )
+            }
+
+            context.fill(
+                Path(ellipseIn: CGRect(
+                    x: cx - bodyW * 0.26 - wob * 0.35,
+                    y: cy - bodyH * 0.30,
+                    width: bodyW * 0.17,
+                    height: bodyW * 0.17
+                )),
+                with: .color(.white.opacity(state == .crashed ? 0.22 : 0.40))
+            )
+            context.fill(
+                Path(ellipseIn: CGRect(
+                    x: cx - bodyW * 0.36 - wob * 0.25,
+                    y: cy - bodyH * 0.16,
+                    width: bodyW * 0.07,
+                    height: bodyW * 0.07
+                )),
+                with: .color(.white.opacity(state == .crashed ? 0.12 : 0.24))
+            )
+
+            let eyeY = cy - bodyH * 0.06 + (state == .bashful ? size * 0.01 : 0)
+            let eyeEL = cx - bodyW * 0.16 + wob * 0.55
+            let eyeER = cx + bodyW * 0.14 + wob * 0.55
+            let eyeOpenL: CGFloat = state == .alert ? 4.7 : 4.2
+            let eyeOpenR: CGFloat = state == .alert ? 4.0 : 3.6
+            let eyeH = max(0.15, 1.0 - blinkProgress)
+
+            context.fill(
+                Path(ellipseIn: CGRect(
+                    x: eyeEL - eyeOpenL / 2,
+                    y: eyeY - eyeOpenL * eyeH / 2,
+                    width: eyeOpenL,
+                    height: eyeOpenL * eyeH
+                )),
+                with: .color(.black.opacity(state == .crashed ? 0.55 : 0.84))
+            )
+            context.fill(
+                Path(ellipseIn: CGRect(
+                    x: eyeER - eyeOpenR / 2,
+                    y: eyeY - eyeOpenR * eyeH / 2,
+                    width: eyeOpenR,
+                    height: eyeOpenR * eyeH
+                )),
+                with: .color(.black.opacity(state == .crashed ? 0.55 : 0.84))
+            )
+
+            let mouthCX = cx - 1.2 + wob * 0.45
+            let mouthY = eyeY + 7.5
+            let mouthCurve: CGFloat = switch state {
+            case .thinking: 1.0
+            case .alert: 4.8
+            case .bashful: 2.8
+            case .crashed: -2.6
+            case .idle: 3.8
+            }
+
+            var mouth = Path()
+            mouth.move(to: CGPoint(x: mouthCX - 5.5, y: mouthY))
+            mouth.addQuadCurve(
+                to: CGPoint(x: mouthCX + 5.5, y: mouthY),
+                control: CGPoint(x: mouthCX, y: mouthY + mouthCurve)
+            )
+            context.stroke(
+                mouth,
+                with: .color(.black.opacity(state == .crashed ? 0.5 : 0.72)),
+                style: StrokeStyle(lineWidth: 1.7, lineCap: .round)
+            )
+        }
+        .frame(width: size * 1.4, height: size * 1.32)
+        .onReceive(ticker) { _ in
+            guard animate else { return }
+
+            breathPhase += state == .alert ? 0.016 : 0.010
+
+            wobble.update(target: wobbleTarget, stiffness: 0.09, damping: 0.74)
+            antennaeWobble.update(target: wobble.position * 0.6, stiffness: 0.05, damping: 0.80)
+
+            elapsed += 0.016
+            if elapsed >= nextBlink {
+                elapsed = 0
+                nextBlink = Double.random(in: 2.2...5.8)
+
+                withAnimation(.easeInOut(duration: 0.07)) { blinkProgress = 1.0 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.11) {
+                    withAnimation(.easeInOut(duration: 0.09)) { blinkProgress = 0 }
+                }
+
+                let range: ClosedRange<CGFloat> = state == .alert ? -3.0...3.0 : -2.2...2.2
+                wobbleTarget = CGFloat.random(in: range)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    wobbleTarget = 0
+                }
+            }
+        }
+    }
+}
+
 struct NotchDragonIcon: View {
     let size: CGFloat
     let color: Color
     let pose: NotchDinoPose
     var animate: Bool = false
-
-    @State private var framePhase: Int = 0
-
-    private let animationTimer = Timer.publish(every: 0.18, on: .main, in: .common).autoconnect()
 
     init(
         size: CGFloat = 16,
@@ -39,359 +255,65 @@ struct NotchDragonIcon: View {
     }
 
     var body: some View {
-        Canvas { context, canvasSize in
-            let sprite = currentSprite
-            let spriteHeight = CGFloat(sprite.count)
-            let width = CGFloat(sprite.first?.count ?? 18)
-            let scale = size / max(spriteHeight, 1)
-            let xOffset = (canvasSize.width - width * scale) / 2
-            let pixels = filledPixels(in: sprite)
-            let eyePixels = markerPixels(in: sprite, marker: "o")
-            let crashedEyePixels = markerPixels(in: sprite, marker: "x")
-
-            drawPixels(
-                pixels.map { ($0.0 + 0.7, $0.1 + 0.7) },
-                       color: Color.black.opacity(0.35),
-                       context: &context,
-                       scale: scale,
-                       xOffset: xOffset,
-                yOffset: 0
-            )
-            drawPixels(
-                pixels,
-                       color: color,
-                       context: &context,
-                       scale: scale,
-                       xOffset: xOffset
-            )
-            drawPixels(eyePixels, color: Color.white.opacity(0.95), context: &context, scale: scale, xOffset: xOffset)
-            drawPixels(crashedEyePixels, color: Color.white.opacity(0.95), context: &context, scale: scale, xOffset: xOffset)
-        }
+        NotchJellyPetV2(
+            size: size,
+            state: claudeState,
+            gradient: jellyGradient,
+            animate: animate
+        )
         .frame(width: frameWidth, height: size)
-        .onReceive(animationTimer) { _ in
-            if animate {
-                framePhase = (framePhase + 1) % 4
-            }
-        }
+        .accessibilityLabel(accessibilityLabel)
     }
 
     private var frameWidth: CGFloat {
-        let sprite = currentSprite
-        let width = CGFloat(sprite.first?.count ?? 18)
-        let height = CGFloat(max(sprite.count, 1))
-        let aspectRatio = width / height
-        return max(size * 1.12, size * aspectRatio)
-    }
-
-    private func drawPixels(
-        _ pixels: [(CGFloat, CGFloat)],
-        color: Color,
-        context: inout GraphicsContext,
-        scale: CGFloat,
-        xOffset: CGFloat,
-        yOffset: CGFloat = 0
-    ) {
-        for (x, y) in pixels {
-            let rect = CGRect(
-                x: xOffset + x * scale,
-                y: (y + yOffset) * scale,
-                width: scale,
-                height: scale
-            )
-            context.fill(Path(rect), with: .color(color))
+        switch pose {
+        case .jumping:
+            return size * 1.22
+        case .ducking:
+            return size * 1.16
+        default:
+            return size * 1.18
         }
     }
 
-    private func runningPixels(legShift: CGFloat, tailShift: CGFloat) -> [(CGFloat, CGFloat)] {
-        [
-            (10, 1), (11, 1), (12, 1), (13, 1),
-            (9, 2), (10, 2), (11, 2), (12, 2), (13, 2), (14, 2),
-            (9, 3), (10, 3), (11, 3), (12, 3), (13, 3), (14, 3),
-            (9, 4), (10, 4), (11, 4), (12, 4), (13, 4), (14, 4),
-            (8, 5), (9, 5), (10, 5), (11, 5), (12, 5), (13, 5), (14, 5),
-            (8, 6), (9, 6), (10, 6), (11, 6), (12, 6), (13, 6),
-            (6, 7), (7, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7),
-            (5, 8), (6, 8), (7, 8), (8, 8), (9, 8), (10, 8), (11, 8),
-            (3, 9 + tailShift), (5, 9), (6, 9), (7, 9), (8, 9), (9, 9), (10, 9), (11, 9),
-            (2, 10 + tailShift), (3, 10 + tailShift), (4, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10), (10, 10),
-            (1, 11 + tailShift), (2, 11 + tailShift), (3, 11 + tailShift), (4, 11), (5, 11), (6, 11), (7, 11), (8, 11), (9, 11),
-            (1, 12 + tailShift), (2, 12 + tailShift), (3, 12 + tailShift), (4, 12), (5, 12), (6, 12), (7, 12), (8, 12),
-            (2, 13 + tailShift), (3, 13 + tailShift), (4, 13), (5, 13), (6, 13), (7, 13),
-            (3, 14 + tailShift), (4, 14), (5, 14), (6, 14),
-            (6, 15), (7, 15), (8, 15), (9, 15),
-            (7, 16), (8, 16), (9, 16),
-            (7, 17 + legShift), (8, 17), (10, 17), (11, 17 + legShift),
-            (7, 18 + legShift), (8, 18), (10, 18), (11, 18 + legShift),
-            (7, 19 + legShift), (8, 19), (10, 19), (11, 19 + legShift),
-            (12, 8), (12, 9), (13, 9)
-        ]
-    }
-
-    private var waitingPixels: [(CGFloat, CGFloat)] {
-        runningPixels(legShift: 0, tailShift: 0)
-    }
-
-    private var jumpingPixels: [(CGFloat, CGFloat)] {
-        runningPixels(legShift: 0, tailShift: 0)
-            .map { (x, y) in
-                if y >= 17 {
-                    return (x, y - 2)
-                }
-                return (x, y - 3)
-            }
-            + [(9, 15), (10, 15)]
-    }
-
-    private var duckingPixels: [(CGFloat, CGFloat)] {
-        [
-            (6, 7), (7, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7), (14, 7),
-            (5, 8), (6, 8), (7, 8), (8, 8), (9, 8), (10, 8), (11, 8), (12, 8), (13, 8), (14, 8),
-            (3, 9), (4, 9), (5, 9), (6, 9), (7, 9), (8, 9), (9, 9), (10, 9), (11, 9), (12, 9), (13, 9),
-            (2, 10), (3, 10), (4, 10), (5, 10), (6, 10), (7, 10), (8, 10), (9, 10), (10, 10), (11, 10), (12, 10),
-            (1, 11), (2, 11), (3, 11), (4, 11), (5, 11), (6, 11), (7, 11), (8, 11), (9, 11), (10, 11),
-            (2, 12), (3, 12), (4, 12), (5, 12), (6, 12), (7, 12), (8, 12), (9, 12),
-            (4, 13), (5, 13), (6, 13), (7, 13), (8, 13),
-            (5, 14), (6, 14), (9, 14), (10, 14),
-            (5, 15), (6, 15), (9, 15), (10, 15)
-        ]
-    }
-
-    private var crashedPixels: [(CGFloat, CGFloat)] {
-        runningPixels(legShift: 0, tailShift: 0)
-            .map { (x, y) in
-                if x >= 10 { return (x, y + 1) }
-                return (x, y)
-            }
-            + [(12, 10), (13, 10), (14, 10)]
-    }
-
-    private var currentSprite: [String] {
+    private var claudeState: ClaudeState {
         switch pose {
         case .waiting:
-            return framePhase.isMultiple(of: 3) ? waitingOpenSprite : waitingBlinkSprite
+            return .idle
         case .running:
-            return framePhase.isMultiple(of: 2) ? runningSpriteA : runningSpriteB
+            return .thinking
         case .jumping:
-            return jumpingSprite
+            return .alert
         case .ducking:
-            return framePhase.isMultiple(of: 2) ? duckingSpriteA : duckingSpriteB
+            return .bashful
         case .crashed:
-            return crashedSprite
+            return .crashed
         }
     }
 
-    private func filledPixels(in sprite: [String]) -> [(CGFloat, CGFloat)] {
-        var pixels: [(CGFloat, CGFloat)] = []
-        for (y, row) in sprite.enumerated() {
-            for (x, char) in row.enumerated() where char == "#" {
-                pixels.append((CGFloat(x), CGFloat(y)))
-            }
-        }
-        return pixels
+    private var jellyGradient: Gradient {
+        Gradient(stops: [
+            .init(color: color.opacity(0.98), location: 0.0),
+            .init(color: color.opacity(0.82), location: 0.58),
+            .init(color: color.opacity(0.52), location: 1.0)
+        ])
     }
 
-    private func markerPixels(in sprite: [String], marker: Character) -> [(CGFloat, CGFloat)] {
-        var pixels: [(CGFloat, CGFloat)] = []
-        for (y, row) in sprite.enumerated() {
-            for (x, char) in row.enumerated() where char == marker {
-                pixels.append((CGFloat(x), CGFloat(y)))
-            }
+    private var accessibilityLabel: Text {
+        switch pose {
+        case .waiting:
+            return Text("Idle mascot")
+        case .running:
+            return Text("Working mascot")
+        case .jumping:
+            return Text("Attention mascot")
+        case .ducking:
+            return Text("Approval mascot")
+        case .crashed:
+            return Text("Ended mascot")
         }
-        return pixels
     }
 }
-
-private let waitingOpenSprite = [
-    "........................",
-    "...............#######..",
-    "..............#########.",
-    "..............#########.",
-    "..............#########.",
-    "..............###oo####.",
-    "..............#########.",
-    "..............#########.",
-    ".............########...",
-    "...........##########...",
-    ".........############...",
-    ".......##############...",
-    "......###############...",
-    ".....################...",
-    "....#################...",
-    "...##################...",
-    "..###################...",
-    "#####..###########......",
-    ".###....########........",
-    "..#......######.........",
-    ".........##..##.........",
-    "........##...##.........",
-    "........##...##.........",
-    "........................"
-]
-
-private let waitingBlinkSprite = [
-    "........................",
-    "...............#######..",
-    "..............#########.",
-    "..............#########.",
-    "..............#########.",
-    "..............###..####.",
-    "..............#########.",
-    "..............#########.",
-    ".............########...",
-    "...........##########...",
-    ".........############...",
-    ".......##############...",
-    "......###############...",
-    ".....################...",
-    "....#################...",
-    "...##################...",
-    "..###################...",
-    "#####..###########......",
-    ".###....########........",
-    "..#......######.........",
-    ".........##..##.........",
-    "........##...##.........",
-    "........##...##.........",
-    "........................"
-]
-
-private let runningSpriteA = [
-    "..................",
-    "..........####....",
-    ".........######...",
-    ".........##o####..",
-    ".........#######..",
-    ".........#######..",
-    "........########..",
-    ".......########...",
-    ".....##########...",
-    "...############...",
-    "..############....",
-    "..##########......",
-    "...########.......",
-    "....#######.......",
-    ".....######.......",
-    "......#####.......",
-    ".....##.###.......",
-    "....##...##.......",
-    "....##....##......",
-    ".................."
-]
-
-private let runningSpriteB = [
-    "..................",
-    "..........####....",
-    ".........######...",
-    ".........##o####..",
-    ".........#######..",
-    ".........#######..",
-    "........########..",
-    ".......########...",
-    ".....##########...",
-    "...############...",
-    "..############....",
-    "..##########......",
-    "...########.......",
-    "....#######.......",
-    ".....######.......",
-    "......#####.......",
-    ".....###.##.......",
-    ".....##..###......",
-    "....##....##......",
-    ".................."
-]
-
-private let jumpingSprite = [
-    "..................",
-    ".........####.....",
-    "........######....",
-    "........##o####...",
-    "........#######...",
-    "........#######...",
-    ".......########...",
-    "......########....",
-    "....##########....",
-    "..############....",
-    ".############.....",
-    ".##########.......",
-    "..########........",
-    "...#######........",
-    "....######........",
-    ".....#####........",
-    ".....##.##........",
-    "......#..##.......",
-    ".........##.......",
-    ".................."
-]
-
-private let duckingSpriteA = [
-    "..................",
-    "..................",
-    "..................",
-    "............##....",
-    ".........#######..",
-    ".......##########.",
-    ".....###########..",
-    "...############...",
-    "..############....",
-    ".############.....",
-    ".##########.......",
-    "..########........",
-    "...######.........",
-    "....#####.........",
-    ".....#######......",
-    "....###..####.....",
-    "...###....###.....",
-    "...##.....##......",
-    "..................",
-    ".................."
-]
-
-private let duckingSpriteB = [
-    "..................",
-    "..................",
-    "..................",
-    "............##....",
-    ".........#######..",
-    ".......##########.",
-    ".....###########..",
-    "...############...",
-    "..############....",
-    ".############.....",
-    ".##########.......",
-    "..########........",
-    "...######.........",
-    "....#####.........",
-    "....#######.......",
-    "...####..###......",
-    "..###....####.....",
-    "..##......##......",
-    "..................",
-    ".................."
-]
-
-private let crashedSprite = [
-    "..................",
-    "..........####....",
-    ".........######...",
-    ".........##x####..",
-    ".........###x###..",
-    ".........#######..",
-    "........########..",
-    ".......########...",
-    ".....##########...",
-    "...############...",
-    "..############....",
-    "..##########......",
-    "...########.......",
-    "....#######.......",
-    ".....######.......",
-    ".....######.......",
-    "....##.####.......",
-    "...##...##........",
-    "...##...##........",
-    ".................."
-]
 
 struct ClaudeCrabIcon: View {
     let size: CGFloat

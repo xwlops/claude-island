@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Jelly Pet Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1d2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    gap: 48px;
+  }
+
+  /* Dynamic Island 模拟 */
+  .island {
+    background: #000;
+    border-radius: 20px;
+    padding: 6px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 36px;
+  }
+
+  .island-label {
+    color: rgba(255,255,255,0.45);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  /* 大尺寸展示区 */
+  .showcase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .showcase-label {
+    color: rgba(255,255,255,0.3);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* 状态切换按钮 */
+  .state-panel {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .state-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .state-btn:hover {
+    background: rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.85);
+  }
+
+  .state-btn.active {
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+    border-color: rgba(255,255,255,0.28);
+  }
+</style>
+</head>
+<body>
+
+<!-- Dynamic Island 模拟 -->
+<div class="island">
+  <span class="island-label">ClaudeIsland</span>
+  <canvas id="jellyIsland" width="32" height="24"></canvas>
+</div>
+
+<!-- 大尺寸展示 -->
+<div class="showcase">
+  <span class="showcase-label">Preview</span>
+  <canvas id="jellyLarge" width="160" height="120"></canvas>
+</div>
+
+<!-- 状态切换 -->
+<div class="state-panel">
+  <button class="state-btn active" data-state="idle">Idle</button>
+  <button class="state-btn" data-state="thinking">Thinking</button>
+  <button class="state-btn" data-state="responding">Responding</button>
+  <button class="state-btn" data-state="error">Error</button>
+  <button class="state-btn" data-state="offline">Offline</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// 状态颜色配置
+// ─────────────────────────────────────────
+const STATE_COLORS = {
+  idle: {
+    stops: [
+      { pos: 0,   color: 'rgba(224,248,246,0.95)' },
+      { pos: 0.65, color: 'rgba(140,214,210,0.92)' },
+      { pos: 1,   color: 'rgba(100,188,184,0.95)' }
+    ]
+  },
+  thinking: {
+    stops: [
+      { pos: 0,   color: 'rgba(232,232,255,0.95)' },
+      { pos: 0.65, color: 'rgba(158,168,242,0.92)' },
+      { pos: 1,   color: 'rgba(122,134,224,0.95)' }
+    ]
+  },
+  responding: {
+    stops: [
+      { pos: 0,   color: 'rgba(220,255,220,0.95)' },
+      { pos: 0.65, color: 'rgba(148,220,148,0.92)' },
+      { pos: 1,   color: 'rgba(108,192,108,0.95)' }
+    ]
+  },
+  error: {
+    stops: [
+      { pos: 0,   color: 'rgba(255,224,224,0.95)' },
+      { pos: 0.65, color: 'rgba(234,132,132,0.92)' },
+      { pos: 1,   color: 'rgba(200,88,88,0.95)' }
+    ]
+  },
+  offline: {
+    stops: [
+      { pos: 0,   color: 'rgba(210,210,210,0.90)' },
+      { pos: 0.65, color: 'rgba(140,140,140,0.88)' },
+      { pos: 1,   color: 'rgba(100,100,100,0.90)' }
+    ]
+  }
+};
+
+// ─────────────────────────────────────────
+// 弹簧阻尼
+// ─────────────────────────────────────────
+class Spring {
+  constructor(stiffness = 0.10, damping = 0.75) {
+    this.position = 0;
+    this.velocity = 0;
+    this.stiffness = stiffness;
+    this.damping = damping;
+  }
+  update(target) {
+    const force = (target - this.position) * this.stiffness;
+    this.velocity = this.velocity * this.damping + force;
+    this.position += this.velocity;
+  }
+}
+
+// ─────────────────────────────────────────
+// 果冻宠物核心
+// ─────────────────────────────────────────
+class JellyPet {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.state = 'idle';
+
+    // 三层独立时间
+    this.breathPhase = 0;
+    this.wobbleSpring = new Spring(0.10, 0.75);
+    this.wobbleTarget = 0;
+
+    // 眨眼
+    this.blinkProgress = 0;
+    this.blinkState = 'open'; // open | closing | opening
+    this.elapsed = 0;
+    this.nextBlink = 2.5 + Math.random() * 3;
+
+    // 状态过渡（颜色插值）
+    this.currentColors = [...STATE_COLORS.idle.stops];
+    this.targetColors  = [...STATE_COLORS.idle.stops];
+    this.colorT = 1;
+
+    this.lastTime = null;
+    requestAnimationFrame(t => this.tick(t));
+  }
+
+  setState(state) {
+    if (this.state === state) return;
+    this.state = state;
+    this.currentColors = this.interpolatedColors(this.colorT);
+    this.targetColors  = [...STATE_COLORS[state].stops];
+    this.colorT = 0;
+
+    // 状态切换触发一次晃动
+    if (state !== 'offline') {
+      this.wobbleTarget = (Math.random() - 0.5) * 5;
+      setTimeout(() => { this.wobbleTarget = 0; }, 500);
+    }
+  }
+
+  // 颜色插值（线性 lerp on rgba）
+  lerpColor(a, b, t) {
+    const pa = this.parseRgba(a);
+    const pb = this.parseRgba(b);
+    const r = pa[0] + (pb[0] - pa[0]) * t;
+    const g = pa[1] + (pb[1] - pa[1]) * t;
+    const bl= pa[2] + (pb[2] - pa[2]) * t;
+    const al= pa[3] + (pb[3] - pa[3]) * t;
+    return `rgba(${r|0},${g|0},${bl|0},${al.toFixed(2)})`;
+  }
+
+  parseRgba(str) {
+    const m = str.match(/[\d.]+/g).map(Number);
+    return [m[0], m[1], m[2], m[3] ?? 1];
+  }
+
+  interpolatedColors(t) {
+    return this.currentColors.map((c, i) => ({
+      pos: c.pos,
+      color: this.lerpColor(c.color, this.targetColors[i].color, t)
+    }));
+  }
+
+  tick(timestamp) {
+    if (!this.lastTime) this.lastTime = timestamp;
+    const dt = Math.min((timestamp - this.lastTime) / 1000, 0.05);
+    this.lastTime = timestamp;
+
+    this.update(dt);
+    this.draw();
+    requestAnimationFrame(t => this.tick(t));
+  }
+
+  update(dt) {
+    const isOffline = this.state === 'offline';
+
+    // 颜色过渡
+    if (this.colorT < 1) {
+      this.colorT = Math.min(1, this.colorT + dt * 1.8);
+    }
+
+    if (isOffline) return;
+
+    // 呼吸
+    const breathSpeed = this.state === 'thinking' ? 0.022 : 0.010;
+    this.breathPhase += breathSpeed;
+
+    // 果冻物理
+    this.wobbleSpring.update(this.wobbleTarget);
+
+    // 眨眼状态机
+    this.elapsed += dt;
+    if (this.blinkState === 'open' && this.elapsed >= this.nextBlink) {
+      this.blinkState = 'closing';
+      this.elapsed = 0;
+    }
+    if (this.blinkState === 'closing') {
+      this.blinkProgress = Math.min(1, this.blinkProgress + dt / 0.08);
+      if (this.blinkProgress >= 1) this.blinkState = 'opening';
+    }
+    if (this.blinkState === 'opening') {
+      this.blinkProgress = Math.max(0, this.blinkProgress - dt / 0.10);
+      if (this.blinkProgress <= 0) {
+        this.blinkState = 'open';
+        this.nextBlink = 2.8 + Math.random() * 3.8;
+        // 眨眼时顺带轻微晃动
+        this.wobbleTarget = (Math.random() - 0.5) * 2.5;
+        setTimeout(() => { this.wobbleTarget = 0; }, 600);
+      }
+    }
+  }
+
+  draw() {
+    const { ctx, canvas } = this;
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const cx = W / 2;
+    const cy = H / 2;
+    const isOffline = this.state === 'offline';
+
+    const breathScale = isOffline ? 1 : 1 + Math.sin(this.breathPhase) * 0.016;
+    const wobble = isOffline ? 0 : this.wobbleSpring.position;
+
+    const bodyW = W * 0.70;
+    const bodyH = H * 0.68 * breathScale;
+    const radius = Math.min(bodyW, bodyH) * 0.5;
+
+    const bx = cx - bodyW / 2 + wobble;
+    const by = cy - bodyH / 2;
+
+    // ── 身体渐变 ──
+    const colors = this.interpolatedColors(this.colorT);
+    const gx = cx + wobble * 0.3;
+    const gy = cy - bodyH * 0.28;
+    const grad = ctx.createRadialGradient(gx, gy, 2, gx, gy, bodyW * 0.85);
+    colors.forEach(s => grad.addColorStop(s.pos, s.color));
+
+    ctx.save();
+    this.roundRect(ctx, bx, by, bodyW, bodyH, radius);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+
+    // ── 高光 ──
+    const hlx = cx - bodyW * 0.16 - wobble * 0.42;
+    const hly = cy - bodyH * 0.26;
+    this.drawEllipse(ctx, hlx, hly, bodyW * 0.15, bodyW * 0.15, 'rgba(255,255,255,0.36)');
+    this.drawEllipse(ctx, hlx - bodyW * 0.09, hly + bodyW * 0.09, bodyW * 0.055, bodyW * 0.055, 'rgba(255,255,255,0.22)');
+
+    // ── 眼睛 ──
+    const eyeY = cy - bodyH * 0.04;
+    const eyeDX = bodyW * 0.155;
+    const eyeW = Math.max(W * 0.05, 3.5);
+    const eyeH = eyeW * (1 - this.blinkProgress);
+
+    if (eyeH > 0.3) {
+      const ex = wobble * 0.55;
+      ctx.fillStyle = 'rgba(18,18,22,0.85)';
+      this.drawEllipse(ctx, cx - eyeDX + ex, eyeY, eyeW, eyeH, 'rgba(18,18,22,0.85)');
+      this.drawEllipse(ctx, cx + eyeDX + ex, eyeY, eyeW, eyeH, 'rgba(18,18,22,0.85)');
+    }
+
+    // ── 嘴巴 ──
+    const mouthTension = this.state === 'thinking' ? 0.25 : 1.0;
+    const mouthY = eyeY + eyeW * 1.8;
+    const mouthW = bodyW * 0.22;
+    const mx = wobble * 0.5;
+
+    ctx.beginPath();
+    ctx.moveTo(cx - mouthW / 2 + mx, mouthY);
+    ctx.quadraticCurveTo(
+      cx + mx, mouthY + mouthW * 0.28 * mouthTension,
+      cx + mouthW / 2 + mx, mouthY
+    );
+    ctx.strokeStyle = 'rgba(18,18,22,0.78)';
+    ctx.lineWidth = Math.max(W * 0.028, 1.4);
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
+  drawEllipse(ctx, cx, cy, rx, ry, color) {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx / 2, ry / 2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+}
+
+// ─────────────────────────────────────────
+// 初始化
+// ─────────────────────────────────────────
+const jellyIsland = new JellyPet(document.getElementById('jellyIsland'));
+const jellyLarge  = new JellyPet(document.getElementById('jellyLarge'));
+
+document.querySelectorAll('.state-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const state = btn.dataset.state;
+    jellyIsland.setState(state);
+    jellyLarge.setState(state);
+  });
+});
+</script>
+</body>
+</html>
