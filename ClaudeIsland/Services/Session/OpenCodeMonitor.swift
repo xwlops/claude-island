@@ -9,6 +9,7 @@ actor OpenCodeMonitor {
 
     func fetchSessions(limit: Int = 8) async -> [SessionState]? {
         guard FileManager.default.fileExists(atPath: dbPath) else { return [] }
+        guard await isOpenCodeRunning() else { return [] }
 
         let sql = """
         select id, directory, title, time_created, time_updated, time_archived
@@ -26,6 +27,17 @@ actor OpenCodeMonitor {
             sessions.append(buildSession(from: row, messages: messages))
         }
         return sessions
+    }
+
+    func archiveSession(sessionId: String) async -> Bool {
+        let nowMs = Int64(Date().timeIntervalSince1970 * 1000)
+        let sql = """
+        update session
+        set time_archived = \(nowMs)
+        where id = '\(escaped(sessionId))'
+          and time_archived is null;
+        """
+        return await execute(sql)
     }
 
     private func fetchMessages(for sessionId: String) async -> [OpenCodeMessage] {
@@ -295,6 +307,33 @@ actor OpenCodeMonitor {
         }
 
         return normalized
+    }
+
+    private func isOpenCodeRunning() async -> Bool {
+        let result = await ProcessExecutor.shared.runWithResult(
+            "/usr/bin/pgrep",
+            arguments: ["-x", "opencode"]
+        )
+
+        switch result {
+        case .success(let processResult):
+            return !processResult.output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .failure:
+            return false
+        }
+    }
+
+    private func execute(_ sql: String) async -> Bool {
+        let result = await ProcessExecutor.shared.runWithResult(
+            "/usr/bin/sqlite3",
+            arguments: [dbPath, sql]
+        )
+        switch result {
+        case .success:
+            return true
+        case .failure:
+            return false
+        }
     }
 
     private func query<T: Decodable>(_ sql: String) async -> T? {

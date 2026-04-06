@@ -9,6 +9,7 @@
 import AppKit
 import Combine
 import Foundation
+import os.log
 
 @MainActor
 class ClaudeSessionMonitor: ObservableObject {
@@ -17,6 +18,7 @@ class ClaudeSessionMonitor: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
     private var openCodePollingTask: Task<Void, Never>?
+    private let logger = Logger(subsystem: "com.claudeisland", category: "ClaudeSessionMonitor")
 
     init() {
         SessionStore.shared.sessionsPublisher
@@ -118,10 +120,22 @@ class ClaudeSessionMonitor: ObservableObject {
         }
     }
 
-    /// Archive (remove) a session from the instances list
-    func archiveSession(sessionId: String) {
+    /// Archive a session.
+    /// Claude sessions are removed from in-memory store only.
+    /// OpenCode sessions are archived in opencode.db, then removed from in-memory store.
+    func archiveSession(_ session: SessionState) {
         Task {
-            await SessionStore.shared.process(.sessionEnded(sessionId: sessionId))
+            switch session.provider {
+            case .claude:
+                await SessionStore.shared.process(.sessionEnded(sessionId: session.sessionId))
+            case .opencode:
+                let archived = await OpenCodeMonitor.shared.archiveSession(sessionId: session.sessionId)
+                if archived {
+                    await SessionStore.shared.process(.sessionEnded(sessionId: session.sessionId))
+                } else {
+                    logger.error("Failed to archive OpenCode session \(session.sessionId, privacy: .public)")
+                }
+            }
         }
     }
 

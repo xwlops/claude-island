@@ -123,7 +123,7 @@ struct ClaudeInstancesView: View {
     }
 
     private func archiveSession(_ session: SessionState) {
-        sessionMonitor.archiveSession(sessionId: session.sessionId)
+        sessionMonitor.archiveSession(session)
     }
 
     private func openChat(_ session: SessionState) {
